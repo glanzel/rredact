@@ -8,7 +8,7 @@ description = "Fast, reversible redaction of secrets and PII for LLM workflows"
 readme = "README.md"
 keywords = ["redaction", "secrets", "llm", "privacy", "opencode"]
 categories = ["command-line-utilities", "security"]
-include = ["src/**", "data/**", "README.md", "LICENSE", "NOTICE"]
+include = ["src/**", "data/**", "defaults/**", "README.md", "LICENSE", "NOTICE"]
 default-run = "rredact"
 
 [dependencies]
@@ -22,6 +22,7 @@ glob = "0.3"
 globset = "0.4"
 hex = "0.4"
 ignore = "0.4"
+include_dir = "0.7"
 libc = "0.2"
 percent-encoding = "2"
 regex = "1"

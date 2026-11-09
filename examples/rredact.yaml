@@ -4,7 +4,10 @@
 # skip_paths remain in effect. "builtin" replaces the default bundle selection.
 version: 1
 
-builtin: [secrets, env, openredact]
+# Core bundles.
+builtin: [secrets, env]
+# Imported defaults from defaults/*.yaml, *.yml or *.toml. Omit to load all.
+# sources: [openredact]
 # disable_rules: [openredact-phone]
 # enable_rules: [openredact-date, high-entropy-token]
 
@@ -27,6 +30,7 @@ skip_paths:
   - "target/**"
   - "node_modules/**"
   - ".rredact/**"
+  - "defaults/**"
   - "tests/fixtures/**"
   - "*.bak"
 

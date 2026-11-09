@@ -204,3 +204,50 @@ secretGroup = 2
     assert!(output.status.success(), "{}", stderr(&output));
     assert!(stdout(&output).contains("[REDACTED:WORKSPACE_SECRETS:1]"));
 }
+
+#[test]
+fn import_merge_preserves_existing_rules() {
+    let project = tempfile::tempdir().unwrap();
+    let rules_dir = project.path().join(".rredact/rules.d");
+    fs::create_dir_all(&rules_dir).unwrap();
+    let output = rules_dir.join("openredact.yaml");
+    fs::write(
+        &output,
+        "version: 1\nrules:\n  - id: custom-keep\n    description: Keep me\n    category: pii\n    severity: low\n    pattern: 'CUSTOM-[0-9]+'\n  - id: openredact-email\n    description: Old email rule\n    category: pii\n    severity: medium\n    pattern: 'old-email-pattern'\n  - id: openredact-phone\n    description: Old phone rule\n    category: pii\n    severity: medium\n    pattern: 'old-phone-pattern'\n    validate: phone\n",
+    )
+    .unwrap();
+    let source = project.path().join("recognizer.py");
+    fs::write(
+        &source,
+        "class EmailRecognizer:\n    \"\"\"Email\"\"\"\n    TAG = \"EMAIL\"\n    SCORE = 0.9\n    @property\n    def regexp(self):\n        return r\"[a-z]+@[a-z]+\\.[a-z]+\"\n\nclass PhoneRecognizer:\n    \"\"\"Phone\"\"\"\n    TAG = \"PHONE\"\n    SCORE = 0.8\n    GROUP = 1\n    @property\n    def regexp(self):\n        return r\"(\\d{7,})\"\n",
+    )
+    .unwrap();
+    let result = run(
+        project.path(),
+        &[
+            "rules",
+            "import-openredact",
+            "--source",
+            source.to_str().unwrap(),
+            "--output",
+            output.to_str().unwrap(),
+            "--merge",
+            "--force",
+        ],
+        None,
+    );
+    assert!(result.status.success(), "{}", stderr(&result));
+    let text = fs::read_to_string(&output).unwrap();
+    assert!(text.contains("custom-keep"));
+    assert!(text.contains("openredact-email"));
+    assert!(text.contains("[a-z]+@[a-z]+"));
+    assert!(text.contains("validate: phone"));
+    assert!(!text.contains("old-email-pattern"));
+    assert!(!text.contains("old-phone-pattern"));
+    let validate = run(
+        project.path(),
+        &["rules", "validate", output.to_str().unwrap()],
+        None,
+    );
+    assert!(validate.status.success(), "{}", stderr(&validate));
+}

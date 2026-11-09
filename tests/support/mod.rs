@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Fake credentials for tests.
 //!
 //! The fragments are assembled at runtime so the source tree does not contain

@@ -1,0 +1,40 @@
+name: update-openredact-defaults
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release
+      - name: Import/merge OpenRedact defaults
+        run: |
+          ./target/release/rredact rules import-openredact \
+            --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
+            --output defaults/openredact.yaml \
+            --merge --force
+      - name: Validate defaults
+        run: ./target/release/rredact rules validate defaults/openredact.yaml
+      - name: Commit changed defaults
+        run: |
+          if git diff --quiet -- defaults/openredact.yaml; then
+            echo "OpenRedact defaults are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add defaults/openredact.yaml
+          git commit -m "Update OpenRedact defaults"
+          git push

@@ -61,7 +61,7 @@ fn env_assignment_preserves_quotes_and_comments() {
     let text = "DATABASE_PASSWORD=\"correct horse battery staple\"\nAPI_KEY=abc123\nPUBLIC_KEY=abc\nAUTH_TYPE=oauth\nPASSWORD=foo # keep this comment\n";
     let mut engine = engine(project.path(), None);
     let result = engine
-        .redact(&text, Some("sample.env"), None, None, true)
+        .redact(text, Some("sample.env"), None, None, true)
         .unwrap();
     assert!(result
         .text
@@ -117,7 +117,7 @@ fn allowlisted_values_and_keys_are_ignored() {
     let text = "PASSWORD=changeme\nTOKEN=${MY_TOKEN}\nSECRET=<provided-at-runtime>\nTOKEN_TYPE=Bearer\nAUTH_METHOD=oauth\nEMAIL=dev@example.com\n";
     let mut engine = engine(project.path(), None);
     let result = engine
-        .redact(&text, Some("sample.env"), None, None, true)
+        .redact(text, Some("sample.env"), None, None, true)
         .unwrap();
     assert!(result.findings.is_empty(), "{:?}", result.findings);
 }
@@ -177,7 +177,7 @@ fn validators_reject_false_positives() {
     let text = "valid card 4111 1111 1111 1111\ninvalid card 4111 1111 1111 1112\nvalid iban DE89 3704 0044 0532 0130 00\ninvalid iban DE00 3704 0044 0532 0130 00\nport 5432\nip 192.168.1.1\ncall +49 30 12345678\n";
     let mut engine = engine(project.path(), None);
     let result = engine
-        .redact(&text, Some("sample.env"), None, None, true)
+        .redact(text, Some("sample.env"), None, None, true)
         .unwrap();
     assert!(result.text.contains("[REDACTED:CREDIT_CARD:1]"));
     assert!(result.text.contains("4111 1111 1111 1112"));
@@ -259,7 +259,7 @@ fn toml_project_config_is_found() {
     let project = tempfile::tempdir().unwrap();
     fs::write(
         project.path().join("rredact.toml"),
-        "builtin = [\"secrets\"]\n",
+        "builtin = [\"secrets\"]\nsources = []\n",
     )
     .unwrap();
     let config = load_config(None, &[], Some(project.path())).unwrap();
@@ -278,4 +278,41 @@ fn enable_rules_activates_disabled_builtin() {
         .find(|rule| rule.id == "openredact-date")
         .unwrap();
     assert!(rule.enabled);
+}
+
+#[test]
+fn default_sources_are_loaded_by_default() {
+    let project = tempfile::tempdir().unwrap();
+    let config = load_config(None, &[], Some(project.path())).unwrap();
+    let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
+    assert!(ids.contains(&"openredact-email"));
+    assert!(ids.contains(&"sensitive-variable-assignment"));
+    assert!(rredact::config::default_source_names().contains(&"openredact".to_string()));
+}
+
+#[test]
+fn core_builtin_selection_excludes_sources() {
+    let project = project_with_config(Some("builtin: [secrets, env]\nsources: []\n"));
+    let config = load_config(None, &[], Some(project.path())).unwrap();
+    let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
+    assert!(ids.contains(&"github-token"));
+    assert!(!ids.contains(&"openredact-email"));
+}
+
+#[test]
+fn sources_can_be_selected_explicitly() {
+    let project = project_with_config(Some("builtin: [secrets, env]\nsources: [openredact]\n"));
+    let config = load_config(None, &[], Some(project.path())).unwrap();
+    let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
+    assert!(ids.contains(&"github-token"));
+    assert!(ids.contains(&"openredact-email"));
+}
+
+#[test]
+fn source_only_selection_is_possible() {
+    let project = project_with_config(Some("builtin: [openredact]\n"));
+    let config = load_config(None, &[], Some(project.path())).unwrap();
+    let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
+    assert!(ids.contains(&"openredact-email"));
+    assert!(!ids.contains(&"github-token"));
 }

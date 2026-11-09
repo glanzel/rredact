@@ -8,13 +8,16 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use include_dir::{include_dir, Dir};
 use regex::Regex;
 use serde::Deserialize;
 
 use crate::models::{FailOn, Mode};
 use crate::rules::{compile_rules, parse_rule_document, Rule, RuleConfig};
 
-pub const DEFAULT_BUILTIN: &[&str] = &["secrets", "env", "openredact"];
+pub const CORE_BUILTINS: &[&str] = &["secrets", "env"];
+
+static DEFAULT_SOURCES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/defaults");
 pub const CONFIG_NAMES: &[&str] = &[
     ".rredact.yaml",
     ".rredact.yml",
@@ -45,6 +48,7 @@ const DEFAULT_SKIP_PATHS: &[&str] = &[
     ".rredact/mapping.json",
     ".rredact/redacted/**",
     ".rredact/out/**",
+    "defaults/**",
     "*.lock",
     "package-lock.json",
     "pnpm-lock.yaml",
@@ -119,6 +123,8 @@ const DEFAULT_RULE_FILES: &[&str] = &[
 struct UserConfig {
     #[serde(default)]
     builtin: Option<Vec<String>>,
+    #[serde(default)]
+    sources: Option<Vec<String>>,
     #[serde(default)]
     disable_rules: Vec<String>,
     #[serde(default)]
@@ -298,12 +304,62 @@ pub fn load_config(
         UserConfig::default()
     };
 
-    let builtin = user
-        .builtin
-        .unwrap_or_else(|| DEFAULT_BUILTIN.iter().map(|s| s.to_string()).collect());
+    let all_sources = default_source_names();
+    let user_builtin = user.builtin.clone();
+    let user_sources = user.sources.clone();
+    let selected_builtin = user_builtin
+        .clone()
+        .unwrap_or_else(|| CORE_BUILTINS.iter().map(|name| name.to_string()).collect());
+    let core_selected: Vec<String> = selected_builtin
+        .iter()
+        .filter(|name| CORE_BUILTINS.contains(&name.as_str()))
+        .cloned()
+        .collect();
+    let sources_from_builtin: Vec<String> = selected_builtin
+        .iter()
+        .filter(|name| all_sources.contains(name))
+        .cloned()
+        .collect();
+    let unknown: Vec<&String> = selected_builtin
+        .iter()
+        .filter(|name| !CORE_BUILTINS.contains(&name.as_str()) && !all_sources.contains(name))
+        .collect();
+    if !unknown.is_empty() {
+        bail!(
+            "unknown rule source(s): {:?}; available core bundles: {}; available default sources: {}",
+            unknown,
+            CORE_BUILTINS.join(", "),
+            if all_sources.is_empty() {
+                "(none)".to_string()
+            } else {
+                all_sources.join(", ")
+            }
+        );
+    }
+    let selected_sources = match user_sources {
+        Some(sources) => {
+            let unknown: Vec<&String> = sources
+                .iter()
+                .filter(|name| !all_sources.contains(name))
+                .collect();
+            if !unknown.is_empty() {
+                bail!(
+                    "unknown default source(s): {:?}; available: {}",
+                    unknown,
+                    all_sources.join(", ")
+                );
+            }
+            sources
+        }
+        None if !sources_from_builtin.is_empty() => sources_from_builtin,
+        None => all_sources.clone(),
+    };
     let mut configs: Vec<RuleConfig> = Vec::new();
-    for name in &builtin {
-        configs.extend(load_builtin(name)?);
+    for name in &core_selected {
+        configs.extend(load_core_bundle(name)?);
+    }
+    for name in &selected_sources {
+        configs.extend(load_default_source(name)?);
     }
     configs.extend(user.rules);
 
@@ -437,17 +493,73 @@ pub fn load_config(
     })
 }
 
-fn load_builtin(name: &str) -> Result<Vec<RuleConfig>> {
+fn load_core_bundle(name: &str) -> Result<Vec<RuleConfig>> {
     let text = match name {
         "secrets" => include_str!("../data/secrets.yaml"),
         "env" => include_str!("../data/env.yaml"),
-        "openredact" => include_str!("../data/openredact.yaml"),
-        other => {
-            bail!("unknown builtin rule bundle {other:?}; available: secrets, env, openredact")
-        }
+        other => bail!(
+            "unknown core rule bundle {other:?}; available: {}",
+            CORE_BUILTINS.join(", ")
+        ),
     };
     let document: serde_yaml::Value = serde_yaml::from_str(text).context("invalid builtin YAML")?;
     parse_rule_document(&document, &format!("builtin:{name}"))
+}
+
+pub fn default_source_names() -> Vec<String> {
+    let mut names = Vec::new();
+    for file in DEFAULT_SOURCES_DIR.files() {
+        let path = file.path();
+        let extension = path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        if extension != "yaml" && extension != "yml" && extension != "toml" {
+            continue;
+        }
+        if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) {
+            names.push(stem.to_string());
+        }
+    }
+    names.sort();
+    names.dedup();
+    names
+}
+
+fn load_default_source(name: &str) -> Result<Vec<RuleConfig>> {
+    let file = DEFAULT_SOURCES_DIR.files().find(|file| {
+        let path = file.path();
+        let extension = path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        (extension == "yaml" || extension == "yml" || extension == "toml")
+            && path.file_stem().and_then(|stem| stem.to_str()) == Some(name)
+    });
+    let file = file.ok_or_else(|| {
+        anyhow::anyhow!(
+            "unknown default source {name:?}; available: {}",
+            default_source_names().join(", ")
+        )
+    })?;
+    let text = file
+        .contents_utf8()
+        .ok_or_else(|| anyhow::anyhow!("default source {name:?} is not valid UTF-8"))?;
+    let extension = file
+        .path()
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if extension == "toml" {
+        return parse_gitleaks(text, Path::new(name))
+            .with_context(|| format!("invalid TOML in default source {name:?}"));
+    }
+    let document: serde_yaml::Value = serde_yaml::from_str(text)
+        .with_context(|| format!("invalid YAML in default source {name:?}"))?;
+    parse_rule_document(&document, &format!("defaults:{name}"))
 }
 
 pub fn parse_rule_file(path: &Path) -> Result<Vec<RuleConfig>> {

@@ -16,7 +16,7 @@ class EmailRecognizer:
 
     @property
     def regexp(self):
-        return r"""[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}"""
+        return r"""((?!-)[a-zA-Z0-9\-]{0,62}[a-zA-Z0-9]\.)+[a-zA-Z]{2,63}"""
 
 
 class PhoneRecognizer:
@@ -58,6 +58,11 @@ fn imports_python_recognizers_and_writes_yaml() {
     assert_eq!(origin, source.to_str().unwrap());
     let ids: Vec<&str> = rules.iter().map(|rule| rule.id.as_str()).collect();
     assert!(ids.contains(&"openredact-email"));
+    let email = rules
+        .iter()
+        .find(|rule| rule.id == "openredact-email")
+        .unwrap();
+    assert!(!email.pattern.as_deref().unwrap().contains("(?!"));
     assert!(ids.contains(&"openredact-phone"));
     assert!(!ids.contains(&"openredact-number"));
     assert!(notes.iter().any(|note| note.contains("broad recognizer")));
@@ -66,7 +71,7 @@ fn imports_python_recognizers_and_writes_yaml() {
     write_rules_yaml(&rules, &output, &origin, &notes).unwrap();
     fs::write(
         project.path().join(".rredact.yaml"),
-        "builtin: []\nrule_files: ['.rredact/rules.d/*.yaml']\n",
+        "builtin: []\nsources: []\nrule_files: ['.rredact/rules.d/*.yaml']\n",
     )
     .unwrap();
     let config = load_config(None, &[], Some(project.path())).unwrap();

@@ -1,12 +1,13 @@
 # Project configuration for the rredact repository itself.
 version: 1
-builtin: [secrets, env, openredact]
+builtin: [secrets, env]
 
 skip_paths:
   - ".git/**"
   - "target/**"
   - "tests/**"
   - ".rredact/**"
+  - "defaults/**"
   - "*.bak"
   - "*.orig"
 

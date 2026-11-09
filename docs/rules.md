@@ -191,19 +191,44 @@ von Regel-ID und Fingerprint.
 
 Standardreihenfolge:
 
-1. Built-ins (`builtin` in `.rredact.yaml`)
-2. Inline-`rules` aus `.rredact.yaml`
-3. `.rredact/rules.d/*.yaml` und `*.yml`
-4. `--rules DATEI` bzw. `RREDACT_RULES`
+1. Core-Bundles (`builtin`): `secrets`, `env`
+2. Default-Sets aus `defaults/*.yaml`, `*.yml` oder `*.toml`: Der Dateiname ist der Source-Name
+   (`defaults/openredact.yaml` → `openredact`). Ohne `sources` werden **alle**
+   Default-Sets geladen.
+3. Inline-`rules` aus `.rredact.yaml`
+4. `.rredact/rules.d/*.yaml`, `*.yml` und `*.toml`
+5. `--rules DATEI` bzw. `RREDACT_RULES`
 
-Regel-IDs müssen eindeutig sein. Built-ins deaktivieren:
+Lokal auswählen:
+
+```yaml
+# Default: Core + alle Default-Sets
+builtin: [secrets, env]
+
+# Nur OpenRedact
+builtin: []
+sources: [openredact]
+
+# Ohne importierte Default-Sets
+builtin: [secrets, env]
+sources: []
+
+# Core + OpenRedact
+builtin: [secrets, env]
+sources: [openredact]
+```
+
+Aus Kompatibilitätsgründen kann ein Source-Name auch in `builtin` stehen:
+`builtin: [secrets, env, openredact]`.
+
+Regel-IDs müssen eindeutig sein. Regeln deaktivieren:
 
 ```yaml
 disable_rules:
   - openredact-phone
 ```
 
-Standardmäßig deaktivierte Built-ins wieder aktivieren:
+Standardmäßig deaktivierte Regeln wieder aktivieren:
 
 ```yaml
 enable_rules:
@@ -211,10 +236,18 @@ enable_rules:
   - high-entropy-token
 ```
 
-Nur bestimmte Bundles laden:
+Weitere Tools: einfach `defaults/<tool>.yaml` anlegen; die Datei wird
+standardmäßig geladen und ist über `sources: [<tool>]` auswählbar.
 
-```yaml
-builtin: [secrets, env]   # ohne openredact-PII
+Die OpenRedact-Defaults werden durch
+`.github/workflows/update-openredact-defaults.yml` wöchentlich aktualisiert.
+Der Import nutzt `--merge`, damit kuratierte Zusatzregeln erhalten bleiben:
+
+```bash
+rredact rules import-openredact \
+  --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
+  --output defaults/openredact.yaml \
+  --merge --force
 ```
 
 ## Regeln von einem LLM schreiben lassen

@@ -198,6 +198,22 @@ fn parse_python_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<Stri
         if pattern.trim().is_empty() {
             continue;
         }
+        let mut flags = extract_flags(block);
+        let normalized = if flags.as_deref().is_some_and(|flags| flags.contains('x')) {
+            normalize_verbose_pattern(&pattern)
+        } else {
+            pattern.clone()
+        };
+        let Some(pattern) = sanitize_pattern(&normalized) else {
+            notes.push(format!(
+                "{origin}: {class_name}: skipped pattern with unsupported lookaround"
+            ));
+            continue;
+        };
+        if let Some(flags_value) = &flags {
+            let filtered: String = flags_value.chars().filter(|ch| *ch != 'x').collect();
+            flags = (!filtered.is_empty()).then_some(filtered);
+        }
         let score = extract_constant(block, "SCORE")
             .and_then(|value| value.parse::<f64>().ok())
             .unwrap_or(0.8);
@@ -211,7 +227,6 @@ fn parse_python_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<Stri
         let group = extract_constant(block, "GROUP")
             .and_then(|value| value.parse::<usize>().ok())
             .filter(|value| *value > 0);
-        let flags = extract_flags(block);
         let id = format!("openredact-{}", tag.to_ascii_lowercase().replace('_', "-"));
         rules.push(RuleConfig {
             id: id.clone(),
@@ -242,15 +257,82 @@ fn parse_python_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<Stri
     (rules, notes)
 }
 
+fn normalize_verbose_pattern(pattern: &str) -> String {
+    let mut out = String::with_capacity(pattern.len());
+    let mut chars = pattern.chars().peekable();
+    let mut in_class = false;
+    let mut escaped = false;
+    while let Some(ch) = chars.next() {
+        if escaped {
+            out.push(ch);
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            out.push(ch);
+            escaped = true;
+            continue;
+        }
+        if in_class {
+            out.push(ch);
+            if ch == ']' {
+                in_class = false;
+            }
+            continue;
+        }
+        if ch == '[' {
+            in_class = true;
+            out.push(ch);
+            continue;
+        }
+        if ch == '#' {
+            while let Some(next) = chars.peek() {
+                if *next == '\n' {
+                    break;
+                }
+                chars.next();
+            }
+            continue;
+        }
+        if ch.is_whitespace() {
+            continue;
+        }
+        out.push(ch);
+    }
+    out
+}
+
+fn sanitize_pattern(pattern: &str) -> Option<String> {
+    // OpenRedact's email recognizer uses a negative lookahead to avoid a
+    // leading hyphen in a domain label. The Rust regex engine is RE2-like, so
+    // rewrite that one known construct; skip any other lookaround.
+    let rewritten = pattern.replace(
+        r"((?!-)[a-zA-Z0-9\-]{0,62}[a-zA-Z0-9]\.)+",
+        r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+",
+    );
+    if ["(?=", "(?!", "(?<=", "(?<!"]
+        .iter()
+        .any(|needle| rewritten.contains(needle))
+    {
+        None
+    } else {
+        Some(rewritten)
+    }
+}
+
 fn extract_constant(block: &[&str], name: &str) -> Option<String> {
-    let pattern = Regex::new(&format!(
-        r#"^\s*{}\s*=\s*["']([^"']*)["']"#,
-        regex::escape(name)
-    ))
-    .ok()?;
+    let pattern = Regex::new(&format!(r"^\s*{}\s*=\s*(.+)$", regex::escape(name))).ok()?;
     for line in block {
-        if let Some(captures) = pattern.captures(line) {
-            return captures.get(1).map(|m| m.as_str().to_string());
+        let Some(captures) = pattern.captures(line) else {
+            continue;
+        };
+        let raw = captures.get(1)?.as_str().trim();
+        if let Some(value) = parse_python_string(raw) {
+            return Some(value);
+        }
+        let token = raw.split([' ', '\t', '#']).next()?.trim();
+        if !token.is_empty() {
+            return Some(token.to_string());
         }
     }
     None
@@ -446,7 +528,7 @@ pub fn write_rules_yaml(
     rules: &[RuleConfig],
     output: &Path,
     source: &str,
-    notes: &[String],
+    _notes: &[String],
 ) -> Result<()> {
     let document = OutputDocument {
         version: 1,
@@ -454,7 +536,6 @@ pub fn write_rules_yaml(
             "source": source,
             "license": "MIT",
             "generator": "rredact rules import-openredact",
-            "notes": notes,
         }),
         rules: rules.to_vec(),
     };

@@ -1,6 +1,6 @@
 //! Command line interface.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::fs;
 use std::io::{IsTerminal, Write};
@@ -21,13 +21,16 @@ use crate::openredact::{import_openredact, write_rules_yaml};
 use crate::report::{
     filter_baseline, format_text, load_baseline, save_baseline, to_json, to_sarif, write_report,
 };
+use crate::rules::{BareValues, RuleConfig};
 use crate::scanner::{iter_files, read_stdin, write_text, write_text_atomic};
 use crate::variables::{extract_variables, prompt};
 
 const INIT_CONFIG: &str = r#"version: 1
 
-# Built-in bundles: secrets, env (variable-name heuristics), openredact (PII)
-builtin: [secrets, env, openredact]
+# Core bundles: secrets, env (variable-name heuristics)
+builtin: [secrets, env]
+# Imported default sets from defaults/*.yaml, *.yml or *.toml. If omitted, all are loaded.
+# sources: [openredact]
 # disable_rules: [openredact-phone]
 # enable_rules: [openredact-date, high-entropy-token]
 
@@ -47,6 +50,7 @@ skip_paths:
   - ".venv/**"
   - "target/**"
   - ".rredact/**"
+  - "defaults/**"
   - "*.bak"
   - "*.orig"
 
@@ -237,6 +241,8 @@ struct ImportArgs {
     prefix: Option<String>,
     #[arg(long)]
     include_existing: bool,
+    #[arg(long)]
+    merge: bool,
     #[arg(long)]
     force: bool,
     #[arg(long)]
@@ -789,7 +795,29 @@ fn cmd_rules_import(args: ImportArgs) -> Result<i32> {
             rule.id = format!("{prefix}-{}", rule.id);
         }
     }
-    if !args.include_existing && !args.force {
+    let output = if args.output.is_absolute() {
+        args.output.clone()
+    } else {
+        current_cwd()?.join(&args.output)
+    };
+    if args.merge && output.exists() {
+        let existing = parse_rule_file(&output)
+            .with_context(|| format!("cannot read existing rule file {}", output.display()))?;
+        let mut merged: BTreeMap<String, RuleConfig> = existing
+            .into_iter()
+            .map(|rule| (rule.id.clone(), rule))
+            .collect();
+        for rule in std::mem::take(&mut rules) {
+            let id = rule.id.clone();
+            let value = match merged.remove(&id) {
+                Some(existing) => merge_rule_config(existing, rule),
+                None => rule,
+            };
+            merged.insert(id, value);
+        }
+        rules = merged.into_values().collect();
+    }
+    if !args.include_existing && !args.force && !args.merge {
         let config = load_common(&args.common)?;
         let existing: HashSet<String> = config.rules.iter().map(|rule| rule.id.clone()).collect();
         let mut kept = Vec::new();
@@ -811,12 +839,7 @@ fn cmd_rules_import(args: ImportArgs) -> Result<i32> {
     if rules.is_empty() {
         bail!("no importable recognizers found (existing rules were skipped)");
     }
-    let output = if args.output.is_absolute() {
-        args.output.clone()
-    } else {
-        current_cwd()?.join(&args.output)
-    };
-    if output.exists() && !args.force && !args.dry_run {
+    if output.exists() && !args.force && !args.merge && !args.dry_run {
         bail!("{} exists; use --force to overwrite", output.display());
     }
     if args.dry_run {
@@ -835,6 +858,40 @@ fn cmd_rules_import(args: ImportArgs) -> Result<i32> {
         output.display()
     );
     Ok(0)
+}
+
+fn merge_rule_config(existing: RuleConfig, imported: RuleConfig) -> RuleConfig {
+    let mut merged = imported;
+    if merged.validate.is_none() {
+        merged.validate = existing.validate;
+    }
+    if !existing.enabled {
+        merged.enabled = false;
+    }
+    if merged.paths.is_empty() {
+        merged.paths = existing.paths;
+    }
+    if merged.exclude_paths.is_empty() {
+        merged.exclude_paths = existing.exclude_paths;
+    }
+    if merged.priority == 100 {
+        merged.priority = existing.priority;
+    }
+    if merged.bare_values == BareValues::Auto {
+        merged.bare_values = existing.bare_values;
+    }
+    if merged.allow_keys.is_empty() {
+        merged.allow_keys = existing.allow_keys;
+    }
+    if !merged.strip_quotes {
+        merged.strip_quotes = existing.strip_quotes;
+    }
+    for tag in existing.tags {
+        if !merged.tags.contains(&tag) {
+            merged.tags.push(tag);
+        }
+    }
+    merged
 }
 
 fn cmd_variables(args: VariablesArgs) -> Result<i32> {

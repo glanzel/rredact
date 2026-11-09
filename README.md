@@ -114,10 +114,36 @@ Gitleaks-Regeln werden als `secret`/`high` mit `secretGroup` übernommen.
 
 Regeln werden aus mehreren Quellen geladen:
 
-1. Built-in-Bundles: `secrets`, `env`, `openredact`
-2. `.rredact.yaml` / `.rredact.toml` → `rules: [...]`
-3. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml` (hier schreibt auch ein LLM)
-4. `--rules DATEI` und `RREDACT_RULES`
+1. Core-Bundles: `secrets`, `env`
+2. Default-Sets aus `defaults/*.yaml`, `*.yml` oder `*.toml` – der Dateiname ist der Source-Name,
+   z. B. `defaults/openredact.yaml` → `openredact`. **Standardmäßig werden alle
+   Default-Sets geladen.**
+3. `.rredact.yaml` / `.rredact.toml` → `rules: [...]`
+4. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml` (hier schreibt auch ein LLM)
+5. `--rules DATEI` und `RREDACT_RULES`
+
+Lokal auswählen:
+
+```yaml
+# Default: Core + alle Default-Sets (sources einfach weglassen)
+builtin: [secrets, env]
+
+# Core + explizit OpenRedact
+builtin: [secrets, env]
+sources: [openredact]
+
+# Nur Core, keine importierten Defaults
+builtin: [secrets, env]
+sources: []
+
+# Nur OpenRedact
+builtin: []
+sources: [openredact]
+```
+
+`builtin` und `sources` sind additiv. Aus Kompatibilitätsgründen funktioniert
+auch noch `builtin: [secrets, env, openredact]`; neue Default-Dateien sollten
+aber über `sources` ausgewählt werden.
 
 Beispiel für eine eigene YAML-Regel:
 
@@ -158,33 +184,42 @@ Das funktioniert auch für `KEY: value` (YAML), `"key": "value"` (JSON) und
 
 ## OpenRedact
 
-Die PII-Defaults sind aus den OpenRedact-/nerwhal-Recognizern abgeleitet
-(MIT-Lizenz, siehe [NOTICE](NOTICE)). Enthalten sind u. a. E-Mail, Telefon,
-IBAN (MOD-97-geprüft) und Kreditkarte (Luhn-geprüft). Datum und Adresse sind
+Die PII-Defaults liegen in `defaults/openredact.yaml` und sind aus den
+OpenRedact-/nerwhal-Recognizern abgeleitet (MIT-Lizenz, siehe
+[NOTICE](NOTICE)). Enthalten sind u. a. E-Mail, Telefon, IBAN
+(MOD-97-geprüft) und Kreditkarte (Luhn-geprüft). Datum und Adresse sind
 standardmäßig deaktiviert, weil sie in Quellcode oft Rauschen erzeugen.
 
-Zusätzliche Recognizer importieren:
+Der Workflow
+[.github/workflows/update-openredact-defaults.yml](.github/workflows/update-openredact-defaults.yml)
+aktualisiert dieses Default-Set wöchentlich per CI und committet Änderungen.
+Der Import läuft mit `--merge`: aktualisierte OpenRedact-Regeln werden
+übernommen, kuratierte Zusatzregeln (IBAN, Kreditkarte, Datum, Adresse) bleiben
+erhalten.
+
+Manuell:
 
 ```bash
+# Default-Set aktualisieren, ohne kuratierte Zusatzregeln zu verlieren
 rredact rules import-openredact \
   --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
-  --prefix imported
+  --output defaults/openredact.yaml \
+  --merge --force
 
+# Andere Quelle in ein eigenes Default-Set schreiben
 rredact rules import-openredact \
-  --source ./nerwhal/integrated_recognizers/email_recognizer.py
+  --source ./nerwhal/integrated_recognizers/email_recognizer.py \
+  --output defaults/my-openredact.yaml \
+  --prefix my-openredact
 ```
 
 Der Importer liest die Python-Klassen mit einem kleinen, nicht ausführenden
 Extraktor. `regexp`-Recognizer werden übernommen; spaCy-`patterns`-Recognizer
-werden mit einem Hinweis übersprungen. Bereits vorhandene Regel-IDs werden
-übersprungen; mit `--prefix` oder `--include-existing` lässt sich das steuern.
+werden mit einem Hinweis übersprungen.
 
-Wenn die importierten Regeln die Built-ins ersetzen sollen, vorher in
-`.rredact.yaml` setzen:
-
-```yaml
-builtin: [secrets, env]   # ohne openredact-PII
-```
+Weitere Tools können einfach eine Datei `defaults/<tool>.yaml` ablegen. Sie
+wird standardmäßig mitgeladen und kann über `sources: [<tool>]` ausgewählt
+werden.
 
 ## API für ein externes LLM
 
