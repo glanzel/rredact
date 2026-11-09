@@ -1,0 +1,37 @@
+# Example project rule file.
+# Copy to .rredact/rules.d/project.yaml and adjust the patterns.
+version: 1
+rules:
+  - id: internal-employee-id
+    description: Internal employee ID
+    category: pii
+    severity: medium
+    pattern: '\bEMP-\d{6}\b'
+    placeholder: EMPLOYEE_ID
+    tags: [internal]
+
+  - id: internal-ticket
+    description: Internal ticket reference
+    category: other
+    severity: low
+    pattern: '\bINT-[A-Z]{2}-\d{4}\b'
+    placeholder: TICKET
+    tags: [internal]
+
+  - id: internal-account
+    description: Internal account number after a label
+    category: pii
+    severity: high
+    pattern: 'account=(?P<number>[0-9]{8})'
+    group: number
+    placeholder: ACCOUNT
+    tags: [internal]
+
+  - id: internal-secret-vars
+    description: Internal secret variable names
+    category: secret
+    severity: high
+    type: assignment
+    name_pattern: '(?i)(?:^|[_.-])(?:internal_key|service_pass)(?:$|[_.-])'
+    placeholder: INTERNAL_SECRET
+    tags: [internal, env]

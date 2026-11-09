@@ -1,0 +1,8 @@
+- id: rredact
+  name: rredact scan
+  description: Scan text files for secrets and PII
+  entry: rredact scan
+  language: rust
+  types: [text]
+  pass_filenames: true
+  args: ["--fail-on", "high"]

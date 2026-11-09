@@ -1,0 +1,992 @@
+//! Command line interface.
+
+use std::collections::HashSet;
+use std::env;
+use std::fs;
+use std::io::{IsTerminal, Write};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use anyhow::{bail, Context, Result};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use serde_json::json;
+
+use crate::api::{self, AppState};
+use crate::config::{load_config, parse_rule_file, Config};
+use crate::engine::Engine;
+use crate::mapping::MappingStore;
+use crate::models::{should_fail, FailOn, Finding, Mode, VERSION};
+use crate::openredact::{import_openredact, write_rules_yaml};
+use crate::report::{
+    filter_baseline, format_text, load_baseline, save_baseline, to_json, to_sarif, write_report,
+};
+use crate::scanner::{iter_files, read_stdin, write_text, write_text_atomic};
+use crate::variables::{extract_variables, prompt};
+
+const INIT_CONFIG: &str = r#"version: 1
+
+# Built-in bundles: secrets, env (variable-name heuristics), openredact (PII)
+builtin: [secrets, env, openredact]
+# disable_rules: [openredact-phone]
+# enable_rules: [openredact-date, high-entropy-token]
+
+rule_files:
+  - ".rredact/rules.d/*.yaml"
+  - ".rredact/rules.d/*.yml"
+  - ".rredact/rules.d/*.toml"
+
+allowlist:
+  values: []
+  patterns: []
+  keys: []
+
+skip_paths:
+  - ".git/**"
+  - "node_modules/**"
+  - ".venv/**"
+  - "target/**"
+  - ".rredact/**"
+  - "*.bak"
+  - "*.orig"
+
+max_file_bytes: 2000000
+
+# Contains the original values. Never commit this file.
+mapping: .rredact/mapping.json
+mode: placeholder
+baseline: .rredact/baseline.json
+fail_on: high
+"#;
+
+const INIT_RULES: &str = r#"# Project-specific rules.
+#
+# Example:
+#   rules:
+#     - id: internal-employee-id
+#       description: Internal employee ID
+#       category: pii
+#       severity: medium
+#       pattern: '\bEMP-\d{6}\b'
+#       placeholder: EMPLOYEE_ID
+#
+# Validate with:
+#   rredact rules validate .rredact/rules.d/llm.yaml
+version: 1
+rules: []
+"#;
+
+const INIT_GITIGNORE: &str = "mapping.json\nsessions/\nredacted/\nout/\n";
+
+#[derive(Debug, Parser)]
+#[command(
+    name = "rredact",
+    version,
+    about = "Fast, reversible redaction of secrets and PII for LLM workflows"
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    Scan(ScanArgs),
+    Redact(RedactArgs),
+    Restore(RestoreArgs),
+    Baseline(BaselineArgs),
+    Rules(RulesArgs),
+    Variables(VariablesArgs),
+    Serve(ServeArgs),
+    Init(InitArgs),
+}
+
+#[derive(Debug, Args, Clone)]
+struct Common {
+    #[arg(long, value_name = "FILE")]
+    config: Option<PathBuf>,
+    #[arg(long = "rules", value_name = "FILE")]
+    rule_files: Vec<PathBuf>,
+    #[arg(long, value_name = "FILE")]
+    mapping: Option<PathBuf>,
+    #[arg(long)]
+    no_store: bool,
+    #[arg(long, value_enum)]
+    mode: Option<Mode>,
+    #[arg(long, value_name = "GLOB")]
+    include: Vec<String>,
+    #[arg(long, value_name = "GLOB")]
+    exclude: Vec<String>,
+    #[arg(long)]
+    all: bool,
+    #[arg(long)]
+    quiet: bool,
+    #[arg(long)]
+    verbose: bool,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum Format {
+    Text,
+    Json,
+    Sarif,
+}
+
+#[derive(Debug, Args)]
+struct ScanArgs {
+    #[command(flatten)]
+    common: Common,
+    paths: Vec<String>,
+    #[arg(long, value_enum, default_value = "text")]
+    format: Format,
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+    #[arg(long, value_enum)]
+    fail_on: Option<FailOn>,
+    #[arg(long)]
+    baseline: Option<PathBuf>,
+    #[arg(long)]
+    show_values: bool,
+}
+
+#[derive(Debug, Args)]
+struct RedactArgs {
+    #[command(flatten)]
+    common: Common,
+    paths: Vec<String>,
+    #[arg(long)]
+    output_dir: Option<PathBuf>,
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+    #[arg(long)]
+    in_place: bool,
+    #[arg(long)]
+    backup: bool,
+}
+
+#[derive(Debug, Args)]
+struct RestoreArgs {
+    #[command(flatten)]
+    common: Common,
+    file: Option<PathBuf>,
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+    #[arg(long)]
+    in_place: bool,
+    #[arg(long)]
+    strict: bool,
+}
+
+#[derive(Debug, Args)]
+struct BaselineArgs {
+    #[command(subcommand)]
+    command: BaselineCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum BaselineCommand {
+    Create(BaselineCreateArgs),
+}
+
+#[derive(Debug, Args)]
+struct BaselineCreateArgs {
+    #[command(flatten)]
+    common: Common,
+    paths: Vec<String>,
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct RulesArgs {
+    #[command(subcommand)]
+    command: RulesCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum RulesCommand {
+    List {
+        #[command(flatten)]
+        common: Common,
+        #[arg(long, value_enum, default_value = "table")]
+        format: RulesFormat,
+    },
+    Validate {
+        #[command(flatten)]
+        common: Common,
+        files: Vec<PathBuf>,
+    },
+    ImportOpenredact(ImportArgs),
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum RulesFormat {
+    Table,
+    Json,
+}
+
+#[derive(Debug, Args)]
+struct ImportArgs {
+    #[command(flatten)]
+    common: Common,
+    #[arg(long)]
+    source: String,
+    #[arg(long, default_value = ".rredact/rules.d/openredact.yaml")]
+    output: PathBuf,
+    #[arg(long)]
+    prefix: Option<String>,
+    #[arg(long)]
+    include_existing: bool,
+    #[arg(long)]
+    force: bool,
+    #[arg(long)]
+    dry_run: bool,
+    #[arg(long, default_value_t = 30)]
+    timeout: u64,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum VariablesFormat {
+    Text,
+    Json,
+    Prompt,
+}
+
+#[derive(Debug, Args)]
+struct VariablesArgs {
+    #[command(flatten)]
+    common: Common,
+    paths: Vec<String>,
+    #[arg(long = "all-names")]
+    all_names: bool,
+    #[arg(long, value_enum, default_value = "text")]
+    format: VariablesFormat,
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct ServeArgs {
+    #[command(flatten)]
+    common: Common,
+    #[arg(long, default_value = "127.0.0.1")]
+    host: String,
+    #[arg(long, default_value_t = 8787)]
+    port: u16,
+    #[arg(long)]
+    token: Option<String>,
+    #[arg(long)]
+    allow_remote: bool,
+}
+
+#[derive(Debug, Args)]
+struct InitArgs {
+    #[arg(long)]
+    path: Option<PathBuf>,
+    #[arg(long)]
+    force: bool,
+}
+
+pub fn run() -> i32 {
+    #[cfg(unix)]
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
+    let cli = Cli::parse();
+    match dispatch(cli.command) {
+        Ok(code) => code,
+        Err(error) => {
+            eprintln!("rredact: error: {error:#}");
+            2
+        }
+    }
+}
+
+fn dispatch(command: Command) -> Result<i32> {
+    match command {
+        Command::Scan(args) => cmd_scan(args),
+        Command::Redact(args) => cmd_redact(args),
+        Command::Restore(args) => cmd_restore(args),
+        Command::Baseline(args) => match args.command {
+            BaselineCommand::Create(args) => cmd_baseline_create(args),
+        },
+        Command::Rules(args) => match args.command {
+            RulesCommand::List { common, format } => cmd_rules_list(common, format),
+            RulesCommand::Validate { common, files } => cmd_rules_validate(common, files),
+            RulesCommand::ImportOpenredact(args) => cmd_rules_import(args),
+        },
+        Command::Variables(args) => cmd_variables(args),
+        Command::Serve(args) => cmd_serve(args),
+        Command::Init(args) => cmd_init(args),
+    }
+}
+
+fn load_common(common: &Common) -> Result<Config> {
+    let cwd = env::current_dir().context("cannot determine working directory")?;
+    let mut config = load_config(common.config.as_deref(), &common.rule_files, Some(&cwd))?;
+    if !common.include.is_empty() {
+        config.add_include(&common.include)?;
+    }
+    if !common.exclude.is_empty() {
+        config.add_exclude(&common.exclude)?;
+    }
+    if let Some(mode) = common.mode {
+        config.mode = mode;
+    }
+    Ok(config)
+}
+
+fn mapping_path(common: &Common, config: &Config) -> Option<PathBuf> {
+    if common.no_store {
+        return None;
+    }
+    let path = common
+        .mapping
+        .clone()
+        .or_else(|| config.mapping_path.clone())?;
+    Some(if path.is_absolute() {
+        path
+    } else {
+        env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(path)
+    })
+}
+
+fn make_engine(config: Config, common: &Common) -> Result<Engine> {
+    let mapping = MappingStore::new(mapping_path(common, &config))?;
+    Ok(Engine::new(config, mapping, common.mode))
+}
+
+fn current_cwd() -> Result<PathBuf> {
+    env::current_dir().context("cannot determine working directory")
+}
+
+fn scan_findings(
+    config: &Config,
+    paths: &[String],
+    use_git: bool,
+) -> Result<(Vec<Finding>, usize)> {
+    let mut engine = Engine::new(config.clone(), MappingStore::new(None)?, None);
+    if paths == ["-"] {
+        let text = read_stdin()?;
+        let result = engine.scan(&text, None)?;
+        return Ok((result.findings, 1));
+    }
+    for path in paths {
+        if path != "-" && !Path::new(path).exists() {
+            bail!("path not found: {path}");
+        }
+    }
+    let cwd = current_cwd()?;
+    let files = iter_files(paths, config, use_git, &cwd);
+    let mut findings = Vec::new();
+    let mut file_count = 0usize;
+    for file in files {
+        file_count += 1;
+        let result = engine.scan(&file.text, Some(&file.rel))?;
+        findings.extend(result.findings);
+    }
+    Ok((findings, file_count))
+}
+
+fn cmd_scan(args: ScanArgs) -> Result<i32> {
+    let config = load_common(&args.common)?;
+    let paths = if args.paths.is_empty() {
+        vec![".".to_string()]
+    } else {
+        args.paths.clone()
+    };
+    let (findings, file_count) = scan_findings(&config, &paths, !args.common.all)?;
+    let baseline_path = args
+        .baseline
+        .clone()
+        .or_else(|| config.baseline_path.clone());
+    let baseline = load_baseline(baseline_path.as_deref())?;
+    let (findings, suppressed) = filter_baseline(findings, &baseline);
+    let content = match args.format {
+        Format::Text => format_text(&findings, args.show_values),
+        Format::Json => serde_json::to_string_pretty(&to_json(&findings, args.show_values))?,
+        Format::Sarif => serde_json::to_string_pretty(&to_sarif(&findings))?,
+    };
+    write_report(&content, args.output.as_deref())?;
+    if !args.common.quiet {
+        let extra = if suppressed > 0 {
+            format!(", {suppressed} suppressed by baseline")
+        } else {
+            String::new()
+        };
+        eprintln!(
+            "Scanned {file_count} file(s), {} finding(s){extra}.",
+            findings.len()
+        );
+    }
+    let fail_on = args.fail_on.unwrap_or(config.fail_on);
+    Ok(if should_fail(&findings, fail_on) {
+        1
+    } else {
+        0
+    })
+}
+
+fn cmd_redact(args: RedactArgs) -> Result<i32> {
+    let mut config = load_common(&args.common)?;
+    if args.in_place && (args.output.is_some() || args.output_dir.is_some()) {
+        bail!("--in-place cannot be combined with --output/--output-dir");
+    }
+    if args.output.is_some() && args.output_dir.is_some() {
+        bail!("--output and --output-dir are mutually exclusive");
+    }
+
+    let paths = if args.paths.is_empty() {
+        if std::io::stdin().is_terminal() {
+            bail!("specify files, a directory, or '-' for stdin");
+        }
+        vec!["-".to_string()]
+    } else {
+        args.paths.clone()
+    };
+
+    if paths == ["-"] {
+        if args.in_place || args.output_dir.is_some() {
+            bail!("--in-place/--output-dir cannot be used with stdin");
+        }
+        let mut engine = make_engine(config, &args.common)?;
+        let text = read_stdin()?;
+        let result = engine.redact(&text, None, None, None, true)?;
+        if let Some(output) = &args.output {
+            write_output(output, &result.text)?;
+        } else {
+            write_stdout(&result.text)?;
+        }
+        if !args.common.quiet {
+            eprintln!("Redacted {} finding(s) from stdin.", result.findings.len());
+            mapping_note(result.mapping_stored, &engine, result.mode);
+        }
+        return Ok(0);
+    }
+
+    let cwd = current_cwd()?;
+    let mut resolved = Vec::new();
+    for path in &paths {
+        let path = PathBuf::from(path);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            cwd.join(path)
+        };
+        if !path.exists() {
+            bail!("path not found: {}", path.display());
+        }
+        resolved.push(path);
+    }
+    if args.output.is_some() && (resolved.len() != 1 || !resolved[0].is_file()) {
+        bail!("--output requires exactly one input file");
+    }
+
+    let single_file =
+        resolved.len() == 1 && resolved[0].is_file() && args.output_dir.is_none() && !args.in_place;
+    let output_dir = if single_file || args.output.is_some() {
+        None
+    } else {
+        let directory = args
+            .output_dir
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(".rredact/redacted"));
+        let directory = if directory.is_absolute() {
+            directory
+        } else {
+            cwd.join(directory)
+        };
+        if let Ok(relative) = directory.strip_prefix(&cwd) {
+            let pattern = format!("{}/**", relative.to_string_lossy().replace('\\', "/"));
+            config.add_exclude(&[relative.to_string_lossy().into_owned(), pattern])?;
+        }
+        Some(directory)
+    };
+
+    let string_paths: Vec<String> = resolved
+        .iter()
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect();
+    let files = iter_files(&string_paths, &config, !args.common.all, &cwd);
+    if files.is_empty() {
+        bail!("no scannable text files found");
+    }
+    let file_count = files.len();
+    let mut engine = make_engine(config, &args.common)?;
+    let mut total_findings = 0usize;
+    let mut changed_files = 0usize;
+    let mut mapping_stored = false;
+    for file in files {
+        let result = engine.redact(&file.text, Some(&file.rel), None, None, true)?;
+        total_findings += result.findings.len();
+        if !result.findings.is_empty() {
+            changed_files += 1;
+        }
+        mapping_stored |= result.mapping_stored;
+        if args.in_place {
+            if !result.findings.is_empty() {
+                if args.backup {
+                    fs::copy(&file.path, backup_path(&file.path))
+                        .with_context(|| format!("cannot back up {}", file.path.display()))?;
+                }
+                write_text_atomic(&file.path, &result.text)?;
+            }
+        } else if let Some(output) = &args.output {
+            write_output(output, &result.text)?;
+        } else if let Some(directory) = &output_dir {
+            let relative = Path::new(&file.rel);
+            let relative = if relative.is_absolute() {
+                PathBuf::from(file.path.file_name().unwrap_or_default())
+            } else {
+                relative.to_path_buf()
+            };
+            write_text(&directory.join(relative), &result.text)?;
+        } else {
+            write_stdout(&result.text)?;
+        }
+        if args.common.verbose {
+            eprintln!("{}: {} finding(s)", file.rel, result.findings.len());
+        }
+    }
+    if !args.common.quiet {
+        let destination = if args.in_place {
+            "in place".to_string()
+        } else if let Some(output) = &args.output {
+            output.display().to_string()
+        } else if let Some(directory) = &output_dir {
+            directory.display().to_string()
+        } else {
+            "stdout".to_string()
+        };
+        eprintln!(
+            "Redacted {total_findings} finding(s) in {changed_files} of {file_count} file(s) -> {destination}"
+        );
+        mapping_note(
+            mapping_stored,
+            &engine,
+            args.common.mode.unwrap_or(engine.mode),
+        );
+    }
+    Ok(0)
+}
+
+fn backup_path(path: &Path) -> PathBuf {
+    PathBuf::from(format!("{}.bak", path.display()))
+}
+
+fn mapping_note(stored: bool, engine: &Engine, mode: Mode) {
+    if stored {
+        if let Some(path) = &engine.mapping.path {
+            eprintln!(
+                "Mapping: {} (contains secrets, keep private)",
+                path.display()
+            );
+        }
+    } else if engine.mapping.stored() {
+        let suffix = if matches!(mode, Mode::Mask | Mode::Hash) {
+            format!(" ({})", mode.as_str())
+        } else {
+            String::new()
+        };
+        eprintln!("Mapping: not written{suffix}; placeholders are not reversible");
+    } else {
+        eprintln!("Mapping: in-memory only (--no-store); placeholders cannot be restored later");
+    }
+}
+
+fn cmd_restore(args: RestoreArgs) -> Result<i32> {
+    let config = load_common(&args.common)?;
+    let path = mapping_path(&args.common, &config)
+        .ok_or_else(|| anyhow::anyhow!("restore needs a mapping file (do not use --no-store)"))?;
+    let mapping = MappingStore::new(Some(path.clone()))?;
+    if mapping.is_empty() {
+        bail!(
+            "no entries in mapping {}; run `rredact redact` first or pass --mapping",
+            path.display()
+        );
+    }
+    let text = match &args.file {
+        Some(file) if file.to_string_lossy() == "-" => read_stdin()?,
+        Some(file) => {
+            fs::read_to_string(file).with_context(|| format!("cannot read {}", file.display()))?
+        }
+        None if !std::io::stdin().is_terminal() => read_stdin()?,
+        None => bail!("specify a file, '-' or pipe text on stdin"),
+    };
+    let (restored, count, unresolved) = mapping.restore(&text);
+    if args.in_place {
+        let file = args
+            .file
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("--in-place needs a file path"))?;
+        if file.to_string_lossy() == "-" {
+            bail!("--in-place needs a file path");
+        }
+        write_text_atomic(file, &restored)?;
+    } else if let Some(output) = &args.output {
+        write_output(output, &restored)?;
+    } else {
+        write_stdout(&restored)?;
+    }
+    if !args.common.quiet {
+        eprintln!("Restored {count} placeholder(s).");
+        if !unresolved.is_empty() {
+            eprintln!(
+                "Warning: {} unknown placeholder(s) left untouched.",
+                unresolved.len()
+            );
+        }
+    }
+    Ok(if args.strict && !unresolved.is_empty() {
+        1
+    } else {
+        0
+    })
+}
+
+fn cmd_baseline_create(args: BaselineCreateArgs) -> Result<i32> {
+    let config = load_common(&args.common)?;
+    let paths = if args.paths.is_empty() {
+        vec![".".to_string()]
+    } else {
+        args.paths.clone()
+    };
+    let (findings, file_count) = scan_findings(&config, &paths, !args.common.all)?;
+    let output = args
+        .output
+        .clone()
+        .or_else(|| config.baseline_path.clone())
+        .ok_or_else(|| anyhow::anyhow!("no baseline path configured; use --output"))?;
+    save_baseline(&output, &findings)?;
+    if !args.common.quiet {
+        eprintln!(
+            "Wrote baseline with {} finding(s) from {} file(s) to {}.",
+            findings.len(),
+            file_count,
+            output.display()
+        );
+    }
+    Ok(0)
+}
+
+fn cmd_rules_list(common: Common, format: RulesFormat) -> Result<i32> {
+    let config = load_common(&common)?;
+    match format {
+        RulesFormat::Json => {
+            let metadata = config
+                .rules
+                .iter()
+                .map(|rule| serde_json::to_value(rule.metadata()).unwrap_or_default())
+                .collect::<Vec<_>>();
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&json!({
+                    "count": metadata.len(),
+                    "rules": metadata,
+                }))?
+            );
+        }
+        RulesFormat::Table => {
+            if config.rules.is_empty() {
+                println!("No rules loaded.");
+                return Ok(0);
+            }
+            let headers = [
+                "ID", "TYPE", "CATEGORY", "SEVERITY", "PRIORITY", "SOURCE", "ON",
+            ];
+            let rows: Vec<Vec<String>> = config
+                .rules
+                .iter()
+                .map(|rule| {
+                    let metadata = rule.metadata();
+                    vec![
+                        metadata.id,
+                        metadata.rule_type,
+                        metadata.category,
+                        metadata.severity.as_str().to_string(),
+                        metadata.priority.to_string(),
+                        metadata.source,
+                        if metadata.enabled {
+                            "yes".into()
+                        } else {
+                            "no".into()
+                        },
+                    ]
+                })
+                .collect();
+            let mut widths: Vec<usize> = headers.iter().map(|header| header.len()).collect();
+            for row in &rows {
+                for (index, cell) in row.iter().enumerate() {
+                    widths[index] = widths[index].max(cell.len());
+                }
+            }
+            for (index, header) in headers.iter().enumerate() {
+                print!("{:<width$}  ", header, width = widths[index]);
+            }
+            println!();
+            for width in &widths {
+                print!("{:-<width$}  ", "", width = width);
+            }
+            println!();
+            for row in &rows {
+                for (index, cell) in row.iter().enumerate() {
+                    print!("{:<width$}  ", cell, width = widths[index]);
+                }
+                println!();
+            }
+            println!("\n{} rule(s).", rows.len());
+        }
+    }
+    Ok(0)
+}
+
+fn cmd_rules_validate(common: Common, files: Vec<PathBuf>) -> Result<i32> {
+    if files.is_empty() {
+        return match load_common(&common) {
+            Ok(config) => {
+                println!(
+                    "OK {}: {} rule(s)",
+                    config
+                        .config_path
+                        .as_ref()
+                        .map(|path| path.display().to_string())
+                        .unwrap_or_else(|| "<defaults>".into()),
+                    config.rules.len()
+                );
+                Ok(0)
+            }
+            Err(error) => {
+                eprintln!("ERROR: {error:#}");
+                Ok(1)
+            }
+        };
+    }
+    let mut failed = false;
+    for file in files {
+        match parse_rule_file(&file) {
+            Ok(rules) => println!("OK {}: {} rule(s)", file.display(), rules.len()),
+            Err(error) => {
+                failed = true;
+                eprintln!("ERROR {}: {error:#}", file.display());
+            }
+        }
+    }
+    Ok(if failed { 1 } else { 0 })
+}
+
+fn cmd_rules_import(args: ImportArgs) -> Result<i32> {
+    let (mut rules, notes, origin) =
+        import_openredact(&args.source, Duration::from_secs(args.timeout))?;
+    if let Some(prefix) = args
+        .prefix
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        for rule in &mut rules {
+            rule.id = format!("{prefix}-{}", rule.id);
+        }
+    }
+    if !args.include_existing && !args.force {
+        let config = load_common(&args.common)?;
+        let existing: HashSet<String> = config.rules.iter().map(|rule| rule.id.clone()).collect();
+        let mut kept = Vec::new();
+        for rule in rules {
+            if existing.contains(&rule.id) {
+                eprintln!(
+                    "note: skipped {} (already loaded; use --prefix or --include-existing)",
+                    rule.id
+                );
+            } else {
+                kept.push(rule);
+            }
+        }
+        rules = kept;
+    }
+    for note in &notes {
+        eprintln!("note: {note}");
+    }
+    if rules.is_empty() {
+        bail!("no importable recognizers found (existing rules were skipped)");
+    }
+    let output = if args.output.is_absolute() {
+        args.output.clone()
+    } else {
+        current_cwd()?.join(&args.output)
+    };
+    if output.exists() && !args.force && !args.dry_run {
+        bail!("{} exists; use --force to overwrite", output.display());
+    }
+    if args.dry_run {
+        println!("{}", serde_yaml::to_string(&json!({"rules": &rules}))?);
+        eprintln!(
+            "Would write {} rule(s) to {} (source: {origin}).",
+            rules.len(),
+            output.display()
+        );
+        return Ok(0);
+    }
+    write_rules_yaml(&rules, &output, &origin, &notes)?;
+    eprintln!(
+        "Imported {} rule(s) from {origin} to {}.",
+        rules.len(),
+        output.display()
+    );
+    Ok(0)
+}
+
+fn cmd_variables(args: VariablesArgs) -> Result<i32> {
+    let config = load_common(&args.common)?;
+    let paths = if args.paths.is_empty() {
+        vec![".".to_string()]
+    } else {
+        args.paths.clone()
+    };
+    let cwd = current_cwd()?;
+    let files = iter_files(&paths, &config, !args.common.all, &cwd);
+    let variables = extract_variables(&files, !args.all_names);
+    let content = match args.format {
+        VariablesFormat::Text => variables
+            .iter()
+            .map(|variable| format!("{}\t{}:{}", variable.name, variable.path, variable.line))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        VariablesFormat::Json => serde_json::to_string_pretty(&json!({
+            "count": variables.len(),
+            "variables": variables,
+        }))?,
+        VariablesFormat::Prompt => prompt(&variables),
+    };
+    write_report(&content, args.output.as_deref())?;
+    if !args.common.quiet {
+        eprintln!("{} variable name(s).", variables.len());
+    }
+    Ok(0)
+}
+
+fn cmd_serve(args: ServeArgs) -> Result<i32> {
+    let config = load_common(&args.common)?;
+    let engine = make_engine(config.clone(), &args.common)?;
+    let token = args
+        .token
+        .clone()
+        .or_else(|| env::var("RREDACT_API_TOKEN").ok());
+    let loopback = matches!(args.host.as_str(), "127.0.0.1" | "localhost" | "::1");
+    if !loopback && token.is_none() && !args.allow_remote {
+        bail!("refusing to bind a non-loopback address without a token; use --token or --allow-remote");
+    }
+    let state = AppState {
+        engine: Arc::new(Mutex::new(engine)),
+        token,
+        config_path: config.config_path.clone(),
+        root: config.root.clone(),
+        extra_rule_files: args.common.rule_files.clone(),
+    };
+    let runtime = tokio::runtime::Runtime::new()?;
+    runtime.block_on(async move {
+        let listener = tokio::net::TcpListener::bind((args.host.as_str(), args.port))
+            .await
+            .with_context(|| format!("cannot bind {}:{}", args.host, args.port))?;
+        let address = listener.local_addr()?;
+        eprintln!("rredact {VERSION} listening on http://{address}");
+        eprintln!(
+            "{} rule(s); auth={}",
+            config.rules.len(),
+            if state.token.is_some() {
+                "token required"
+            } else {
+                "none"
+            }
+        );
+        axum::serve(listener, api::router(state))
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+            })
+            .await
+            .context("server error")
+    })?;
+    Ok(0)
+}
+
+fn cmd_init(args: InitArgs) -> Result<i32> {
+    let target = args.path.unwrap_or_else(|| PathBuf::from("."));
+    fs::create_dir_all(&target)?;
+    let config_path = target.join(".rredact.yaml");
+    let rules_path = target.join(".rredact/rules.d/llm.yaml");
+    let gitignore_path = target.join(".rredact/.gitignore");
+    let mut written = Vec::new();
+    let mut skipped = Vec::new();
+    for (path, content) in [
+        (&config_path, INIT_CONFIG),
+        (&rules_path, INIT_RULES),
+        (&gitignore_path, INIT_GITIGNORE),
+    ] {
+        if path.exists() && !args.force {
+            skipped.push(path.clone());
+            continue;
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(path, content)?;
+        written.push(path.clone());
+    }
+    let root_gitignore = target.join(".gitignore");
+    let existing = fs::read_to_string(&root_gitignore).unwrap_or_default();
+    let additions = [
+        "target/",
+        ".rredact/mapping.json",
+        ".rredact/sessions/",
+        ".rredact/redacted/",
+        ".rredact/out/",
+    ];
+    let missing: Vec<&str> = additions
+        .iter()
+        .copied()
+        .filter(|line| !existing.lines().any(|existing| existing == *line))
+        .collect();
+    if !missing.is_empty() {
+        let prefix = if existing.is_empty() || existing.ends_with('\n') {
+            ""
+        } else {
+            "\n"
+        };
+        fs::write(
+            &root_gitignore,
+            format!(
+                "{existing}{prefix}\n# rredact runtime data\n{}\n",
+                missing.join("\n")
+            ),
+        )?;
+        written.push(root_gitignore);
+    }
+    for path in written {
+        println!("created {}", path.display());
+    }
+    for path in skipped {
+        println!("skipped {} (exists; use --force)", path.display());
+    }
+    println!("\nNext steps:");
+    println!("  rredact scan .");
+    println!("  rredact redact .            # writes .rredact/redacted/");
+    println!("  rredact variables . --format prompt");
+    println!("  rredact serve               # local API on 127.0.0.1:8787");
+    Ok(0)
+}
+
+fn write_output(path: &Path, text: &str) -> Result<()> {
+    if path.to_string_lossy() == "-" {
+        write_stdout(text)
+    } else {
+        write_text(path, text)
+    }
+}
+
+fn write_stdout(text: &str) -> Result<()> {
+    let mut stdout = std::io::stdout();
+    stdout.write_all(text.as_bytes())?;
+    stdout.flush()?;
+    Ok(())
+}

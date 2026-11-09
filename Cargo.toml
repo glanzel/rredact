@@ -1,0 +1,44 @@
+[package]
+name = "rredact"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+description = "Fast, reversible redaction of secrets and PII for LLM workflows"
+readme = "README.md"
+keywords = ["redaction", "secrets", "llm", "privacy", "opencode"]
+categories = ["command-line-utilities", "security"]
+include = ["src/**", "data/**", "README.md", "LICENSE", "NOTICE"]
+default-run = "rredact"
+
+[dependencies]
+anyhow = "1"
+axum = "0.7"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["clock"] }
+clap = { version = "4.5", features = ["derive"] }
+flate2 = "1"
+glob = "0.3"
+globset = "0.4"
+hex = "0.4"
+ignore = "0.4"
+libc = "0.2"
+percent-encoding = "2"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha2 = "0.10"
+tar = "0.4"
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
+toml = "0.8"
+ureq = "2"
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = true

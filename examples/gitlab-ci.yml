@@ -1,0 +1,10 @@
+# Example GitLab CI job. Copy into .gitlab-ci.yml or include it.
+rredact:
+  image: rust:latest
+  script:
+    - cargo build --release
+    - ./target/release/rredact scan . --format sarif --output rredact.sarif --fail-on high
+  artifacts:
+    when: always
+    paths:
+      - rredact.sarif

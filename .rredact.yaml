@@ -1,0 +1,16 @@
+# Project configuration for the rredact repository itself.
+version: 1
+builtin: [secrets, env, openredact]
+
+skip_paths:
+  - ".git/**"
+  - "target/**"
+  - "tests/**"
+  - ".rredact/**"
+  - "*.bak"
+  - "*.orig"
+
+# Contains original values. Never commit this file.
+mapping: .rredact/mapping.json
+baseline: .rredact/baseline.json
+fail_on: high

@@ -1,0 +1,43 @@
+# Example .rredact.yaml
+#
+# Rule files are additive: the built-in allowlist/values and the default
+# skip_paths remain in effect. "builtin" replaces the default bundle selection.
+version: 1
+
+builtin: [secrets, env, openredact]
+# disable_rules: [openredact-phone]
+# enable_rules: [openredact-date, high-entropy-token]
+
+rule_files:
+  - ".rredact/rules.d/*.yaml"
+  - ".rredact/rules.d/*.yml"
+  - ".rredact/rules.d/*.toml"
+
+allowlist:
+  values:
+    - my-public-placeholder
+  patterns:
+    - '^<[^>]+>$'
+  keys:
+    - PUBLIC_KEY
+    - AUTH_TYPE
+
+skip_paths:
+  - ".git/**"
+  - "target/**"
+  - "node_modules/**"
+  - ".rredact/**"
+  - "tests/fixtures/**"
+  - "*.bak"
+
+include: []
+exclude: []
+max_file_bytes: 2000000
+
+# Contains the original values. Never commit it.
+mapping: .rredact/mapping.json
+baseline: .rredact/baseline.json
+
+# placeholder | mask | hash
+mode: placeholder
+fail_on: high
