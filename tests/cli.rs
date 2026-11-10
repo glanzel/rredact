@@ -233,6 +233,16 @@ fn import_openredaction_overwrites_import_file() {
     description: "Credit card number",
     severity: "high",
   },
+  {
+    type: "INVOICE_NUMBER",
+    regex: /\bINV-[0-9]{4}\b/g,
+    priority: 90,
+    description: "Invoice number",
+    severity: "medium",
+    validator: (value: string, context: string) => {
+      return /invoice|bill/i.test(context);
+    },
+  },
 ];
 "#,
     )
@@ -255,6 +265,8 @@ fn import_openredaction_overwrites_import_file() {
     assert!(text.contains("openredaction-email"));
     assert!(text.contains("openredaction-credit-card"));
     assert!(text.contains("validate: luhn"));
+    assert!(text.contains("context_required:"));
+    assert!(text.contains("invoice|bill"));
     assert!(!text.contains("custom-keep"));
     let validate = run(
         project.path(),

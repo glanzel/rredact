@@ -111,6 +111,12 @@ pub struct RuleConfig {
     #[serde(default)]
     pub validate: Option<String>,
     #[serde(default)]
+    pub context_required: Vec<String>,
+    #[serde(default)]
+    pub context_excluded: Vec<String>,
+    #[serde(default = "default_context_window")]
+    pub context_window: usize,
+    #[serde(default)]
     pub name_pattern: Option<String>,
     #[serde(default = "default_name_match")]
     pub name_match: String,
@@ -149,6 +155,9 @@ fn default_min_entropy() -> f64 {
 }
 fn default_charset() -> String {
     "base64".into()
+}
+fn default_context_window() -> usize {
+    200
 }
 
 #[derive(Debug, Clone)]
@@ -191,6 +200,9 @@ pub struct Rule {
     pub exclude_paths: Option<GlobSet>,
     pub tags: Vec<String>,
     pub source: String,
+    pub context_required: Vec<Regex>,
+    pub context_excluded: Vec<Regex>,
+    pub context_window: usize,
     pub compiled: CompiledKind,
 }
 
@@ -238,6 +250,20 @@ impl Rule {
             .transpose()
             .with_context(|| format!("rule {:?}: invalid validator", config.id))?;
 
+        let mut context_required = Vec::new();
+        for pattern in &config.context_required {
+            context_required.push(
+                Regex::new(pattern)
+                    .with_context(|| format!("rule {:?}: invalid context_required", config.id))?,
+            );
+        }
+        let mut context_excluded = Vec::new();
+        for pattern in &config.context_excluded {
+            context_excluded.push(
+                Regex::new(pattern)
+                    .with_context(|| format!("rule {:?}: invalid context_excluded", config.id))?,
+            );
+        }
         let compiled = match config.rule_type.to_ascii_lowercase().as_str() {
             "regex" => {
                 let pattern = config
@@ -338,6 +364,9 @@ impl Rule {
             exclude_paths,
             tags: config.tags,
             source: source.to_string(),
+            context_required,
+            context_excluded,
+            context_window: config.context_window.max(1),
             compiled,
         })
     }
@@ -381,6 +410,31 @@ impl Rule {
             source: self.source.clone(),
             paths: self.paths.as_ref().map(|_| "configured".to_string()),
         }
+    }
+
+    pub fn context_ok(&self, text: &str, start: usize, end: usize) -> bool {
+        if self.context_required.is_empty() && self.context_excluded.is_empty() {
+            return true;
+        }
+        let mut before = start.saturating_sub(self.context_window);
+        while before > 0 && !text.is_char_boundary(before) {
+            before += 1;
+        }
+        let mut after = (end + self.context_window).min(text.len());
+        while after < text.len() && !text.is_char_boundary(after) {
+            after -= 1;
+        }
+        let context = &text[before..after];
+        if self
+            .context_excluded
+            .iter()
+            .any(|pattern| pattern.is_match(context))
+        {
+            return false;
+        }
+        self.context_required
+            .iter()
+            .all(|pattern| pattern.is_match(context))
     }
 
     pub fn find_candidates(
@@ -430,6 +484,9 @@ impl Rule {
                         if !validator.validate(value) {
                             continue;
                         }
+                    }
+                    if !self.context_ok(text, start, end) {
+                        continue;
                     }
                     out.push((start, end, value.to_string()));
                 }
@@ -487,8 +544,9 @@ impl Rule {
                 .find_iter(text)
                 .filter_map(|m| {
                     let value = m.as_str();
-                    (shannon_entropy(value) >= *min_entropy)
-                        .then(|| (m.start(), m.end(), value.to_string()))
+                    (shannon_entropy(value) >= *min_entropy
+                        && self.context_ok(text, m.start(), m.end()))
+                    .then(|| (m.start(), m.end(), value.to_string()))
                 })
                 .collect(),
         }

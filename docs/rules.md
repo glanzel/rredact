@@ -33,7 +33,10 @@ rules:
 | `exclude_paths` | nein | Globs, die ausgeschlossen werden |
 | `allow_keys` | bei `assignment` | Variablennamen, die nie redigiert werden |
 | `bare_values` | nein | `auto` (Default), `always`, `never`; in Quellcode-Dateien werden unquotierte Werte nur mit `always` redigiert |
-| `validate` | nein | `luhn`, `iban`, `phone`, `basic_auth` |
+| `validate` | nein | `luhn`, `iban`, `phone`, `basic_auth`, `ipv4`, `email` |
+| `context_required` | nein | Liste von Regexen, die im Kontextfenster vorkommen müssen |
+| `context_excluded` | nein | Liste von Regexen, die im Kontextfenster nicht vorkommen dürfen |
+| `context_window` | nein | Zeichen links/rechts um den Treffer (Default 200) |
 | `tags` | nein | freie Tags |
 
 ## Regex-Regeln
@@ -132,6 +135,33 @@ secretGroup = 2
 `secretGroup` wird als `group` übernommen. Die Regel bekommt `category =
 secret`, `severity = high` und `priority = 100`. Das ist praktisch für
 LLM-generierte Regeldateien; die Rust-`regex`-Engine bleibt RE2-kompatibel.
+
+## Kontextregeln
+
+Ein Treffer kann zusätzlich vom umgebenden Text abhängen:
+
+```yaml
+  - id: invoice-number
+    description: Rechnungsnummer nur im Rechnungskontext
+    category: pii
+    severity: medium
+    pattern: '\bINV-[0-9]{4}\b'
+    context_required:
+      - '(?i)invoice|rechnung|bill'
+    context_excluded:
+      - '(?i)example|test'
+    context_window: 200
+    placeholder: INVOICE
+```
+
+`context_required` muss vollständig passen, `context_excluded` darf nicht
+passen. Das Fenster wird um den Treffer gelegt und auf Zeichen-Grenzen
+zugeschnitten.
+
+Der OpenRedaction-Importer extrahiert einfache `regex.test(context)`-Checks aus
+den JS-Validatoren nach diesem Schema. Komplexe oder beliebige JS-Logik kann
+nicht exakt ausgeführt werden; solche Patterns bleiben standardmäßig
+deaktiviert.
 
 ## Entropy-Regeln
 

@@ -22,6 +22,12 @@ rules:
   - openredaction
   - phone_uk_mobile
   validate: phone
+  context_required: []
+  context_excluded:
+  - (?i)\b(version|v\d+|release|build)\s*[:\s]*
+  - (?i)date|dob|birth|expir
+  - (?i)example\s+phone|test\s+number|sample\s+phone|demo\s+phone
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -47,6 +53,12 @@ rules:
   - openredaction
   - phone_uk
   validate: phone
+  context_required: []
+  context_excluded:
+  - (?i)\b(version|v\d+|release|build)\s*[:\s]*
+  - (?i)date|dob|birth|expir
+  - (?i)example\s+phone|test\s+number|sample\s+phone|demo\s+phone
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -72,6 +84,13 @@ rules:
   - openredaction
   - phone_us
   validate: phone
+  context_required: []
+  context_excluded:
+  - (?i)\b(version|v\d+|release|build)\s*[:\s]*
+  - (?i)date|dob|birth|expir
+  - (?i)example\s+phone|test\s+number|fictional\s+number|demo\s+phone
+  - (?i)example\s+phone|test\s+number|sample\s+phone|demo\s+phone
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -97,6 +116,12 @@ rules:
   - openredaction
   - phone_international
   validate: phone
+  context_required: []
+  context_excluded:
+  - (?i)\b(version|v\d+|release|build)\s*[:\s]*
+  - (?i)date|dob|birth|expir
+  - (?i)example\s+phone|test\s+number|sample\s+phone|demo\s+phone
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -115,13 +140,17 @@ rules:
   strip_quotes: false
   placeholder: POSTCODE_UK
   priority: 75
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - postcode_uk
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -140,14 +169,17 @@ rules:
   strip_quotes: false
   placeholder: ZIP_CODE_US
   priority: 70
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - zip_code_us
-  - needs-context
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)\b(phone|tel|call|contact)\b
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -173,6 +205,9 @@ rules:
   - openredaction
   - address_street
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -198,6 +233,9 @@ rules:
   - openredaction
   - address_po_box
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -224,6 +262,10 @@ rules:
   - discord_user_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)discord|snowflake|user[-_]?id|server|guild
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -250,6 +292,10 @@ rules:
   - steam_id64
   - needs-context
   validate: null
+  context_required:
+  - (?i)steam|gaming|player|profile|valve|community
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -276,6 +322,10 @@ rules:
   - social_media_handle
   - needs-context
   validate: null
+  context_required:
+  - (?i)twitter|instagram|tiktok|social|handle|profile|mention|tag
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -302,6 +352,10 @@ rules:
   - twitter_user_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)twitter|tweet|@|user[-_]?id|x\.com
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -328,6 +382,10 @@ rules:
   - facebook_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)facebook|fb|profile|meta|user[-_]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -354,6 +412,10 @@ rules:
   - instagram_username
   - needs-context
   validate: null
+  context_required:
+  - (?i)instagram|ig|insta|profile|handle|username|follow
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -380,6 +442,10 @@ rules:
   - tiktok_username
   - needs-context
   validate: null
+  context_required:
+  - (?i)tiktok|tt|video|profile|creator
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -406,6 +472,10 @@ rules:
   - linkedin_profile
   - needs-context
   validate: null
+  context_required:
+  - (?i)linkedin|profile|professional|connection|network
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -432,6 +502,10 @@ rules:
   - youtube_channel_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)youtube|yt|channel|video|creator|subscriber
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -458,6 +532,10 @@ rules:
   - reddit_username
   - needs-context
   validate: null
+  context_required:
+  - (?i)reddit|subreddit|post|comment|karma
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -484,6 +562,10 @@ rules:
   - xbox_gamertag
   - needs-context
   validate: null
+  context_required:
+  - (?i)xbox|gamertag|live|microsoft|gaming|player
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -510,6 +592,10 @@ rules:
   - psn_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)playstation|psn|sony|ps4|ps5|gamer|player
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -536,6 +622,9 @@ rules:
   - nintendo_friend_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -562,6 +651,10 @@ rules:
   - battletag
   - needs-context
   validate: null
+  context_required:
+  - (?i)battle|battletag|blizzard|overwatch|warcraft|diablo
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -588,6 +681,10 @@ rules:
   - epic_games_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)epic|fortnite|unreal|games|launcher|account
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -614,6 +711,10 @@ rules:
   - telegram_user_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)telegram|tg|chat|user[-_]?id|messenger
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -639,6 +740,11 @@ rules:
   - openredaction
   - solana_address
   validate: null
+  context_required:
+  - (?i)solana|sol\b|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -664,6 +770,11 @@ rules:
   - openredaction
   - polkadot_address
   validate: null
+  context_required:
+  - (?i)polkadot|dot\b|crypto|wallet|blockchain|substrate|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -689,6 +800,11 @@ rules:
   - openredaction
   - avalanche_address
   validate: null
+  context_required:
+  - (?i)avalanche|avax\b|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -714,6 +830,11 @@ rules:
   - openredaction
   - cosmos_address
   validate: null
+  context_required:
+  - (?i)cosmos|atom\b|crypto|wallet|blockchain|ibc|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -739,6 +860,11 @@ rules:
   - openredaction
   - algorand_address
   validate: null
+  context_required:
+  - (?i)algorand|algo\b|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -764,6 +890,11 @@ rules:
   - openredaction
   - tezos_address
   validate: null
+  context_required:
+  - (?i)tezos|xtz\b|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -789,6 +920,11 @@ rules:
   - openredaction
   - polygon_address
   validate: null
+  context_required:
+  - (?i)polygon|matic\b|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -814,6 +950,14 @@ rules:
   - openredaction
   - binance_chain_address
   validate: null
+  context_required:
+  - (?i)binance|bnb\b|bsc|smart[- ]?chain|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  - (?i)binance|bnb|bsc
+  context_excluded:
+  - (?i)ethereum|eth\b|ether
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  - (?i)polygon|matic
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -839,6 +983,11 @@ rules:
   - openredaction
   - near_address
   validate: null
+  context_required:
+  - (?i)near|protocol|crypto|wallet|blockchain|address|send|receive|transaction|transfer
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|dummy|placeholder|version|release
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -864,6 +1013,10 @@ rules:
   - openredaction
   - credit_card
   validate: luhn
+  context_required: []
+  context_excluded:
+  - (?i)example\s+card|test\s+card|sample\s+card|demo\s+card|fake\s+card
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -889,6 +1042,10 @@ rules:
   - openredaction
   - iban
   validate: iban
+  context_required: []
+  context_excluded:
+  - (?i)example\s+iban|test\s+iban|sample\s+iban|demo\s+iban|fake\s+iban
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -914,6 +1071,11 @@ rules:
   - openredaction
   - bank_account_uk
   validate: null
+  context_required:
+  - (?i)account|bank|sort\s+code|financial|payment|transfer|deposit|withdrawal
+  context_excluded:
+  - (?i)example\s+account|test\s+account|sample\s+account|demo\s+account|fake\s+account
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -939,6 +1101,10 @@ rules:
   - openredaction
   - sort_code_uk
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)example\s+sort|test\s+sort|sample\s+sort|demo\s+sort|fake\s+sort
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -964,6 +1130,10 @@ rules:
   - openredaction
   - routing_number_us
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)example\s+routing|test\s+routing|sample\s+routing|demo\s+routing|fake\s+routing
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -989,6 +1159,10 @@ rules:
   - openredaction
   - cvv
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)\b(year|date|expir|valid)\b
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1014,6 +1188,11 @@ rules:
   - openredaction
   - ifsc
   validate: null
+  context_required:
+  - (?i)ifsc|bank|india|in|financial|payment|transfer
+  context_excluded:
+  - (?i)example\s+ifsc|test\s+ifsc|sample\s+ifsc|demo\s+ifsc|fake\s+ifsc
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1040,6 +1219,9 @@ rules:
   - clabe
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1065,6 +1247,11 @@ rules:
   - openredaction
   - bsb_au
   validate: null
+  context_required:
+  - (?i)bsb|bank|australia|au|financial|payment|transfer
+  context_excluded:
+  - (?i)example\s+bsb|test\s+bsb|sample\s+bsb|demo\s+bsb|fake\s+bsb
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1091,6 +1278,9 @@ rules:
   - isin
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1117,6 +1307,9 @@ rules:
   - cusip
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1143,6 +1336,9 @@ rules:
   - sedol
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1169,6 +1365,9 @@ rules:
   - lei
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1194,6 +1393,11 @@ rules:
   - openredaction
   - ssn
   validate: null
+  context_required:
+  - (?i)ssn|social\s+security|us\b|usa|american|government|tax|irs|federal
+  context_excluded:
+  - (?i)example\s+ssn|test\s+ssn|sample\s+ssn|demo\s+ssn|fake\s+ssn
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1219,6 +1423,11 @@ rules:
   - openredaction
   - passport_uk
   validate: null
+  context_required:
+  - (?i)passport|uk\b|british|gb|government|border|travel|immigration
+  context_excluded:
+  - (?i)example\s+passport|test\s+passport|sample\s+passport|demo\s+passport|fake\s+passport
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1245,6 +1454,11 @@ rules:
   - passport_us
   - needs-context
   validate: null
+  context_required:
+  - (?i)passport|us\b|usa|american|government|state\s+department|border|travel|immigration
+  context_excluded:
+  - (?i)example\s+passport|test\s+passport|sample\s+passport|demo\s+passport|fake\s+passport
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1270,6 +1484,11 @@ rules:
   - openredaction
   - national_insurance_uk
   validate: null
+  context_required:
+  - (?i)national\s+insurance|nino|ni\b|uk\b|british|gb|government|tax|benefits|hmrc
+  context_excluded:
+  - (?i)example\s+nino|test\s+nino|sample\s+nino|demo\s+nino|fake\s+nino
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1295,6 +1514,11 @@ rules:
   - openredaction
   - nhs_number
   validate: null
+  context_required:
+  - (?i)nhs|health|medical|hospital|gp|doctor|patient|clinical
+  context_excluded:
+  - (?i)example\s+nhs|test\s+nhs|sample\s+nhs|demo\s+nhs|fake\s+nhs
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1320,6 +1544,11 @@ rules:
   - openredaction
   - driving_license_uk
   validate: null
+  context_required:
+  - (?i)driving|license|dl\b|uk\b|british|gb|dvla|vehicle|car
+  context_excluded:
+  - (?i)example\s+license|test\s+license|sample\s+license|demo\s+license|fake\s+license
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1345,6 +1574,11 @@ rules:
   - openredaction
   - driving_license_us
   validate: null
+  context_required:
+  - (?i)driving|license|dl\b|us\b|usa|american|dmv|vehicle|car
+  context_excluded:
+  - (?i)example\s+license|test\s+license|sample\s+license|demo\s+license|fake\s+license
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1370,6 +1604,11 @@ rules:
   - openredaction
   - tax_id
   validate: null
+  context_required:
+  - (?i)tax|tin|ein|irs|government|federal|revenue|income
+  context_excluded:
+  - (?i)example\s+tax|test\s+tax|sample\s+tax|demo\s+tax|fake\s+tax|12-3456789
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1395,6 +1634,9 @@ rules:
   - openredaction
   - passport_mrz_td3
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1420,6 +1662,9 @@ rules:
   - openredaction
   - passport_mrz_td1
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1445,6 +1690,9 @@ rules:
   - openredaction
   - visa_mrz
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1470,6 +1718,10 @@ rules:
   - openredaction
   - travel_document_number
   validate: null
+  context_required:
+  - (?i)travel|document|visa|passport|border|immigration
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1495,6 +1747,10 @@ rules:
   - openredaction
   - visa_number
   validate: null
+  context_required:
+  - (?i)visa|travel|entry|immigration|consulate|embassy
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1520,6 +1776,9 @@ rules:
   - openredaction
   - immigration_number
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1545,6 +1804,10 @@ rules:
   - openredaction
   - border_crossing_card
   validate: null
+  context_required:
+  - (?i)border|crossing|card|entry|bcc
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1570,6 +1833,9 @@ rules:
   - openredaction
   - utr_uk
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1595,6 +1861,9 @@ rules:
   - openredaction
   - vat_number
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1620,6 +1889,9 @@ rules:
   - openredaction
   - company_number_uk
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1645,6 +1917,9 @@ rules:
   - openredaction
   - itin
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1670,6 +1945,9 @@ rules:
   - openredaction
   - sin_ca
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1696,6 +1974,10 @@ rules:
   - iata_airport_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)airport|iata|flight|departure|arrival|terminal
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1722,6 +2004,10 @@ rules:
   - flight_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)flight|airline|departure|arrival|boarding|gate
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1748,6 +2034,9 @@ rules:
   - aircraft_tail_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1774,6 +2063,10 @@ rules:
   - aircraft_registration
   - needs-context
   validate: null
+  context_required:
+  - (?i)aircraft|plane|aviation|registration|tail\s?number
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1800,6 +2093,10 @@ rules:
   - faa_airman_certificate
   - needs-context
   validate: null
+  context_required:
+  - (?i)faa|airman|pilot|certificate|license|aviation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1826,6 +2123,10 @@ rules:
   - icao_aircraft_type
   - needs-context
   validate: null
+  context_required:
+  - (?i)aircraft|type|icao|model|boeing|airbus
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1852,6 +2153,10 @@ rules:
   - aircraft_mode_s
   - needs-context
   validate: null
+  context_required:
+  - (?i)mode\s?s|icao|aircraft|transponder|adsb
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1878,6 +2183,10 @@ rules:
   - airline_booking_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)booking|reservation|locator|reference|pnr|airline|flight
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1904,6 +2213,10 @@ rules:
   - iata_airline_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)airline|carrier|iata|flight|aviation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1930,6 +2243,10 @@ rules:
   - donor_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)donor|donation|charitable|contribution|gift|philanthrop
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1956,6 +2273,9 @@ rules:
   - donation_reference
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -1982,6 +2302,10 @@ rules:
   - uk_charity_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)charity|charitable|commission
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2008,6 +2332,10 @@ rules:
   - us_ein
   - needs-context
   validate: null
+  context_required:
+  - (?i)nonprofit|charity|501\(c\)|tax[-\s]exempt|foundation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2034,6 +2362,10 @@ rules:
   - grant_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)grant|funding|award|endowment|foundation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2060,6 +2392,10 @@ rules:
   - beneficiary_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)beneficiary|recipient|aid|assistance|service\s+user
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2086,6 +2422,9 @@ rules:
   - campaign_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2112,6 +2451,10 @@ rules:
   - gift_aid_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)gift\s*aid|tax\s+relief|declaration
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2138,6 +2481,10 @@ rules:
   - volunteer_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)volunteer|volunteering|community\s+service
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2164,6 +2511,10 @@ rules:
   - membership_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)member|membership|association|society|club
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2190,6 +2541,10 @@ rules:
   - legacy_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)legacy|bequest|will|estate|inheritance|in\s+memory
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2216,6 +2571,9 @@ rules:
   - student_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2242,6 +2600,10 @@ rules:
   - university_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)university|college|campus|student|enrollment|registr
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2268,6 +2630,9 @@ rules:
   - course_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2294,6 +2659,9 @@ rules:
   - grade_reference
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2320,6 +2688,9 @@ rules:
   - transcript_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2346,6 +2717,9 @@ rules:
   - library_card
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2372,6 +2746,10 @@ rules:
   - faculty_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)faculty|teacher|instructor|professor|staff|employee|personnel
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2398,6 +2776,9 @@ rules:
   - enrollment_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2424,6 +2805,9 @@ rules:
   - financial_aid_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2450,6 +2834,10 @@ rules:
   - degree_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)degree|diploma|certificate|graduation|credential
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2476,6 +2864,10 @@ rules:
   - exam_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)exam|test|quiz|assessment|midterm|final|score
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2502,6 +2894,9 @@ rules:
   - exam_registration_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2528,6 +2923,10 @@ rules:
   - housing_assignment
   - needs-context
   validate: null
+  context_required:
+  - (?i)dorm|housing|residence|room|building|floor|suite
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2554,6 +2953,9 @@ rules:
   - meal_plan_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2580,6 +2982,9 @@ rules:
   - parking_permit
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2606,6 +3011,10 @@ rules:
   - scholarship_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)scholarship|grant|award|fellowship|stipend|financial
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2632,6 +3041,9 @@ rules:
   - graduation_year
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2658,6 +3070,10 @@ rules:
   - application_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)application|admission|applicant|prospective|admit|enroll
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2684,6 +3100,9 @@ rules:
   - alumni_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2710,6 +3129,10 @@ rules:
   - research_grant
   - needs-context
   validate: null
+  context_required:
+  - (?i)grant|research|funding|nsf|nih|award|project
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2736,6 +3159,9 @@ rules:
   - department_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2762,6 +3188,10 @@ rules:
   - emergency_call_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)emergency|911|999|112|ambulance|fire|police|dispatch|incident|call[- ]?center
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2788,6 +3218,10 @@ rules:
   - police_report_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)police|officer|citation|arrest|detective|sheriff|trooper|constable|case[- ]?number
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2814,6 +3248,10 @@ rules:
   - fire_incident_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)fire|firefighter|dept|department|incident|response|station|alarm
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2840,6 +3278,10 @@ rules:
   - ambulance_call_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)ambulance|ems|paramedic|emergency[- ]?medical|transport|patient[- ]?care
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2866,6 +3308,10 @@ rules:
   - paramedic_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)paramedic|emt|nremt|emergency[- ]?medical[- ]?tech|certification|license|certified|medic
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2892,6 +3338,10 @@ rules:
   - emergency_shelter_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)shelter|evacuation|refuge|displaced|disaster|emergency[- ]?housing
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2918,6 +3368,10 @@ rules:
   - disaster_victim_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)disaster|victim|dvi|casualty|identification|mass[- ]?casualty|morgue
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2944,6 +3398,10 @@ rules:
   - search_rescue_mission_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)search|rescue|sar|mission|lost|missing|coast[- ]?guard
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2970,6 +3428,10 @@ rules:
   - emergency_medical_incident
   - needs-context
   validate: null
+  context_required:
+  - (?i)medical|emergency|incident|patient|treatment|hospital|trauma
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -2996,6 +3458,10 @@ rules:
   - firefighter_badge
   - needs-context
   validate: null
+  context_required:
+  - (?i)firefighter|fire[- ]?dept|badge|ff|station|apparatus
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3022,6 +3488,10 @@ rules:
   - police_badge
   - needs-context
   validate: null
+  context_required:
+  - (?i)police|officer|badge|shield|dept|department|patrol
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3048,6 +3518,10 @@ rules:
   - missing_person_case
   - needs-context
   validate: null
+  context_required:
+  - (?i)missing|amber|alert|person|child|endangered|located|found
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3074,6 +3548,10 @@ rules:
   - dispatcher_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)dispatcher|911|999|112|emergency|operator|call[- ]?center
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3100,6 +3578,10 @@ rules:
   - hazmat_incident
   - needs-context
   validate: null
+  context_required:
+  - (?i)hazmat|hazardous|material|chemical|spill|containment|decontamination
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3126,6 +3608,10 @@ rules:
   - epa_id_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)epa|environmental|hazardous|waste|rcra|generator
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3152,6 +3638,10 @@ rules:
   - npdes_permit
   - needs-context
   validate: null
+  context_required:
+  - (?i)npdes|permit|discharge|wastewater|water\s?quality
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3178,6 +3668,10 @@ rules:
   - hazardous_waste_manifest
   - needs-context
   validate: null
+  context_required:
+  - (?i)manifest|hazardous|waste|rcra|generator|transporter
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3204,6 +3698,10 @@ rules:
   - air_quality_permit
   - needs-context
   validate: null
+  context_required:
+  - (?i)air|emission|permit|quality|pollution|stack
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3230,6 +3728,10 @@ rules:
   - water_quality_certificate
   - needs-context
   validate: null
+  context_required:
+  - (?i)water|quality|certificate|permit|discharge|wetland
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3256,6 +3758,10 @@ rules:
   - storm_water_permit
   - needs-context
   validate: null
+  context_required:
+  - (?i)storm|water|runoff|permit|npdes|swppp
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3282,6 +3788,10 @@ rules:
   - ust_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)ust|underground|storage|tank|petroleum|fuel
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3308,6 +3818,10 @@ rules:
   - facility_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)facility|plant|site|environmental|epa|compliance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3334,6 +3848,10 @@ rules:
   - tri_facility_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)tri|toxic\s?release|inventory|facility|epa|emissions
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3360,6 +3878,10 @@ rules:
   - spill_report_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)spill|release|incident|environmental|response|cleanup
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3386,6 +3908,10 @@ rules:
   - remediation_site_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)remediation|cleanup|site|superfund|brownfield|contamination
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3412,6 +3938,10 @@ rules:
   - environmental_certificate
   - needs-context
   validate: null
+  context_required:
+  - (?i)environmental|compliance|certificate|permit|authorization
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3438,6 +3968,9 @@ rules:
   - swift_bic
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3464,6 +3997,9 @@ rules:
   - transaction_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3490,6 +4026,9 @@ rules:
   - investment_account
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3516,6 +4055,9 @@ rules:
   - wire_transfer_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3542,6 +4084,9 @@ rules:
   - dd_mandate
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3568,6 +4113,10 @@ rules:
   - cheque_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)cheque|check|payment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3594,6 +4143,9 @@ rules:
   - trading_account
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3620,6 +4172,9 @@ rules:
   - loan_account
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3646,6 +4201,9 @@ rules:
   - bitcoin_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3672,6 +4230,9 @@ rules:
   - ethereum_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3698,6 +4259,9 @@ rules:
   - litecoin_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3724,6 +4288,9 @@ rules:
   - monero_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3750,6 +4317,9 @@ rules:
   - ripple_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3776,6 +4346,9 @@ rules:
   - cardano_address
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3802,6 +4375,10 @@ rules:
   - crypto_tx_hash
   - needs-context
   validate: null
+  context_required:
+  - (?i)crypto|bitcoin|ethereum|blockchain|transaction|tx|txid
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3828,6 +4405,9 @@ rules:
   - card_track1_data
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3854,6 +4434,9 @@ rules:
   - card_track2_data
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3880,6 +4463,9 @@ rules:
   - cvv_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3906,6 +4492,9 @@ rules:
   - card_expiry
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3932,6 +4521,10 @@ rules:
   - stock_trade
   - needs-context
   validate: null
+  context_required:
+  - (?i)stock|trade|buy|sell|shares|equity|portfolio
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3958,6 +4551,10 @@ rules:
   - wire_transfer_details
   - needs-context
   validate: null
+  context_required:
+  - (?i)wire|transfer|beneficiary|recipient|iban|swift|aba|routing
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -3984,6 +4581,9 @@ rules:
   - payment_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4010,6 +4610,9 @@ rules:
   - payment_customer_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4036,6 +4639,9 @@ rules:
   - subscription_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4062,6 +4668,9 @@ rules:
   - statement_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4088,6 +4697,9 @@ rules:
   - standing_order_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4114,6 +4726,9 @@ rules:
   - payment_reference
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4140,6 +4755,10 @@ rules:
   - card_auth_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)payment|card|transaction|auth|approval
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4166,6 +4785,10 @@ rules:
   - merchant_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)merchant|terminal|pos|payment|processor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4192,6 +4815,10 @@ rules:
   - terminal_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)terminal|pos|point.of.sale|card.reader
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4218,6 +4845,11 @@ rules:
   - uk_bank_account_iban
   - needs-context
   validate: iban
+  context_required:
+  - (?i)iban|account|bank|uk|gb|financial|payment|transfer
+  context_excluded:
+  - (?i)example\s+iban|test\s+iban|sample\s+iban|demo\s+iban|fake\s+iban
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4244,6 +4876,11 @@ rules:
   - uk_sort_code_account
   - needs-context
   validate: null
+  context_required:
+  - (?i)sort\s+code|account|bank|uk|gb|financial|payment|transfer
+  context_excluded:
+  - (?i)example\s+account|test\s+account|sample\s+account|demo\s+account|fake\s+account
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4270,6 +4907,10 @@ rules:
   - riot_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)riot|league[- ]?of[- ]?legends|valorant|tft|teamfight[- ]?tactics|gaming
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4296,6 +4937,10 @@ rules:
   - twitch_username
   - needs-context
   validate: null
+  context_required:
+  - (?i)twitch|streaming|streamer|channel|live|broadcast
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4322,6 +4967,10 @@ rules:
   - esports_player_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)esports|tournament|competition|player|competitor|gaming|league
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4348,6 +4997,10 @@ rules:
   - tournament_registration_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)tournament|bracket|registration|competition|event|gaming|esports
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4374,6 +5027,10 @@ rules:
   - roblox_user_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)roblox|robux|user|player|gaming
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4400,6 +5057,10 @@ rules:
   - minecraft_uuid
   - needs-context
   validate: null
+  context_required:
+  - (?i)minecraft|mc|mojang|player|uuid|server
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4426,6 +5087,10 @@ rules:
   - fortnite_account_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)fortnite|epic[- ]?games|battle[- ]?royale|gaming
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4452,6 +5117,10 @@ rules:
   - cod_player_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)call[- ]?of[- ]?duty|cod|warzone|activision|gaming
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4478,6 +5147,10 @@ rules:
   - apex_player_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)apex[- ]?legends|apex|ea|respawn|gaming|player
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4504,6 +5177,10 @@ rules:
   - dota_friend_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)dota|steam|valve|gaming|player|moba
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4530,6 +5207,10 @@ rules:
   - csgo_friend_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)cs:?go|counter[- ]?strike|steam|valve|gaming
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4556,6 +5237,10 @@ rules:
   - overwatch_battletag
   - needs-context
   validate: null
+  context_required:
+  - (?i)overwatch|ow2|blizzard|gaming|player
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4582,6 +5267,10 @@ rules:
   - uber_trip_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)uber|rideshare|ride|trip|driver|passenger
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4608,6 +5297,10 @@ rules:
   - lyft_ride_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)lyft|rideshare|ride|trip|driver|passenger
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4634,6 +5327,10 @@ rules:
   - doordash_order_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)doordash|dasher|delivery|order|food[- ]?delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4660,6 +5357,10 @@ rules:
   - ubereats_order_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)uber[- ]?eats|delivery|order|food[- ]?delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4686,6 +5387,10 @@ rules:
   - grubhub_order_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)grubhub|delivery|order|food[- ]?delivery|restaurant
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4712,6 +5417,10 @@ rules:
   - airbnb_reservation_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)airbnb|reservation|booking|host|guest|stay|accommodation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4738,6 +5447,10 @@ rules:
   - instacart_order_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)instacart|shopper|grocery|delivery|order
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4764,6 +5477,10 @@ rules:
   - taskrabbit_task_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)taskrabbit|tasker|task|job|service|handyman
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4790,6 +5507,10 @@ rules:
   - upwork_job_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)upwork|freelance|contract|job|project|client|proposal
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4816,6 +5537,10 @@ rules:
   - fiverr_order_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)fiverr|seller|buyer|gig|order|freelance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4842,6 +5567,10 @@ rules:
   - postmates_delivery_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)postmates|delivery|order|courier|food
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4868,6 +5597,10 @@ rules:
   - gig_platform_user_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)driver|dasher|shopper|tasker|courier|rider|delivery|gig[- ]?economy|platform
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4894,6 +5627,9 @@ rules:
   - gig_platform_order_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4920,6 +5656,9 @@ rules:
   - medical_record_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4946,6 +5685,9 @@ rules:
   - patient_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4972,6 +5714,9 @@ rules:
   - appointment_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -4998,6 +5743,10 @@ rules:
   - icd10_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)diagnos|condition|disease|disorder|icd|code
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5024,6 +5773,9 @@ rules:
   - cpt_code
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5050,6 +5802,9 @@ rules:
   - prescription_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5076,6 +5831,9 @@ rules:
   - health_insurance_claim
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5102,6 +5860,9 @@ rules:
   - health_plan_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5128,6 +5889,9 @@ rules:
   - medical_device_serial
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5154,6 +5918,10 @@ rules:
   - lab_test_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)lab|test|sample|specimen|pathology
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5180,6 +5948,9 @@ rules:
   - trial_participant_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5206,6 +5977,10 @@ rules:
   - protocol_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)trial|study|protocol|research|clinical
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5232,6 +6007,10 @@ rules:
   - genetic_marker
   - needs-context
   validate: null
+  context_required:
+  - (?i)genetic|gene|snp|marker|genome|dna|variant|allele
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5258,6 +6037,10 @@ rules:
   - biobank_sample_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)biobank|specimen|sample|tissue|blood|genetic
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5284,6 +6067,9 @@ rules:
   - provider_license
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5310,6 +6096,10 @@ rules:
   - npi_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)provider|npi|physician|doctor|clinic|hospital|practice
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5336,6 +6126,9 @@ rules:
   - dea_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5362,6 +6155,9 @@ rules:
   - hospital_account
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5388,6 +6184,9 @@ rules:
   - emergency_contact
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5414,6 +6213,9 @@ rules:
   - biometric_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5440,6 +6242,9 @@ rules:
   - dna_sequence
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5466,6 +6271,10 @@ rules:
   - drug_dosage
   - needs-context
   validate: null
+  context_required:
+  - (?i)medication|prescription|drug|dose|treatment|therapy
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5492,6 +6301,9 @@ rules:
   - medical_image_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5518,6 +6330,9 @@ rules:
   - blood_type
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5544,6 +6359,9 @@ rules:
   - allergy_info
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5570,6 +6388,10 @@ rules:
   - vaccination_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)vaccine|vaccination|immunization|shot|dose
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5596,6 +6418,9 @@ rules:
   - chi_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5622,6 +6447,9 @@ rules:
   - ehic_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5648,6 +6476,9 @@ rules:
   - airline_pnr
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5674,6 +6505,10 @@ rules:
   - hotel_reservation
   - needs-context
   validate: null
+  context_required:
+  - (?i)hotel|reservation|booking|room|accommodation|stay|check[-\s]?in|lodging
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5700,6 +6535,10 @@ rules:
   - frequent_flyer_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)frequent[- ]?flyer|miles|mileage|loyalty|rewards|member|airline
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5726,6 +6565,10 @@ rules:
   - hotel_loyalty_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)hotel|marriott|hilton|hyatt|ihg|loyalty|rewards|points|member
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5752,6 +6595,10 @@ rules:
   - cruise_booking_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)cruise|ship|sailing|voyage|cabin|carnival|royal[- ]?caribbean|norwegian
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5778,6 +6625,10 @@ rules:
   - travel_agency_booking
   - needs-context
   validate: null
+  context_required:
+  - (?i)travel[- ]?agency|tour|package|itinerary|booking|vacation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5804,6 +6655,10 @@ rules:
   - rental_car_confirmation
   - needs-context
   validate: null
+  context_required:
+  - (?i)rental|car|vehicle|hertz|enterprise|avis|budget|rent
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5830,6 +6685,10 @@ rules:
   - theme_park_ticket
   - needs-context
   validate: null
+  context_required:
+  - (?i)theme[- ]?park|disney|universal|attraction|admission|ticket|pass|entry
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5856,6 +6715,10 @@ rules:
   - tsa_precheck_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)tsa|precheck|pre[- ]?check|ktn|known[- ]?traveler|security|screening
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5882,6 +6745,10 @@ rules:
   - global_entry_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)global[- ]?entry|pass[- ]?id|customs|immigration|cbp|trusted[- ]?traveler
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5908,6 +6775,9 @@ rules:
   - employee_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5934,6 +6804,10 @@ rules:
   - payroll_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)payroll|salary|compensation|pay|wage|earning
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5960,6 +6834,9 @@ rules:
   - salary_amount
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -5986,6 +6863,10 @@ rules:
   - performance_review_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)performance|review|appraisal|evaluation|rating|assessment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6012,6 +6893,10 @@ rules:
   - job_application_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)application|candidate|applicant|job|position|recruit|hiring
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6038,6 +6923,9 @@ rules:
   - resume_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6064,6 +6952,9 @@ rules:
   - benefits_plan_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6090,6 +6981,10 @@ rules:
   - retirement_account
   - needs-context
   validate: null
+  context_required:
+  - (?i)401k|403b|ira|retirement|pension|fund|invest|contribution
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6116,6 +7011,10 @@ rules:
   - direct_deposit_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)direct[-\s]?deposit|routing|bank|account|payroll|pay
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6142,6 +7041,9 @@ rules:
   - background_check_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6168,6 +7070,10 @@ rules:
   - drug_test_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)drug|test|screening|urinalysis|specimen|sample
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6194,6 +7100,9 @@ rules:
   - timesheet_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6220,6 +7129,10 @@ rules:
   - training_cert_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)training|certification|cert|course|completion|credential
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6246,6 +7159,10 @@ rules:
   - expense_report_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)expense|reimbursement|travel|claim|receipt
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6272,6 +7189,10 @@ rules:
   - leave_request_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)pto|leave|vacation|time[-\s]?off|absence|sick|personal
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6298,6 +7219,10 @@ rules:
   - exit_interview_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)exit|termination|separation|offboard|departure|resign
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6324,6 +7249,10 @@ rules:
   - disciplinary_action_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)disciplinary|incident|warning|violation|misconduct|investigation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6350,6 +7279,10 @@ rules:
   - emergency_contact_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)emergency|contact|ice|next[-\s]?of[-\s]?kin
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6376,6 +7309,9 @@ rules:
   - work_permit
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6402,6 +7338,9 @@ rules:
   - security_clearance
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6428,6 +7367,10 @@ rules:
   - recruiter_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)recruiter|agency|headhunter|placement|referral
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6454,6 +7397,10 @@ rules:
   - claim_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)claim|insurance|policy|accident|loss|damage|settlement
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6480,6 +7427,9 @@ rules:
   - policy_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6506,6 +7456,9 @@ rules:
   - policy_holder_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6532,6 +7485,10 @@ rules:
   - quote_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)quote|quotation|estimate|premium|insurance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6558,6 +7515,10 @@ rules:
   - insurance_certificate
   - needs-context
   validate: null
+  context_required:
+  - (?i)certificate|insurance|coverage|proof
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6584,6 +7545,10 @@ rules:
   - adjuster_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)adjuster|claims|inspector|evaluator
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6610,6 +7575,10 @@ rules:
   - underwriter_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)underwriter|underwriting|policy|risk|assessment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6636,6 +7605,10 @@ rules:
   - incident_report_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)incident|accident|report|event|occurrence|loss
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6662,6 +7635,9 @@ rules:
   - premium_payment_ref
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6688,6 +7664,10 @@ rules:
   - reinsurance_treaty
   - needs-context
   validate: null
+  context_required:
+  - (?i)reinsurance|treaty|cession|facultative
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6714,6 +7694,9 @@ rules:
   - case_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6740,6 +7723,10 @@ rules:
   - matter_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)legal|matter|client|engagement|firm|attorney|counsel
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6766,6 +7753,9 @@ rules:
   - bar_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6792,6 +7782,10 @@ rules:
   - exhibit_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)exhibit|evidence|document|trial|hearing|deposition
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6818,6 +7812,10 @@ rules:
   - deposition_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)deposition|depo|testimony|transcript|witness
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6844,6 +7842,9 @@ rules:
   - discovery_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6870,6 +7871,9 @@ rules:
   - court_reporter_license
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6896,6 +7900,9 @@ rules:
   - subpoena_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6922,6 +7929,10 @@ rules:
   - judgment_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)judgment|order|decree|ruling|decision|court
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6948,6 +7959,9 @@ rules:
   - patent_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -6974,6 +7988,10 @@ rules:
   - settlement_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)settlement|agreement|resolution|mediation|arbitration
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7000,6 +8018,10 @@ rules:
   - client_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)client|legal|matter|billing|invoice|retainer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7026,6 +8048,9 @@ rules:
   - retainer_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7052,6 +8077,9 @@ rules:
   - notary_license
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7078,6 +8106,9 @@ rules:
   - bankruptcy_case
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7104,6 +8135,10 @@ rules:
   - probate_case
   - needs-context
   validate: null
+  context_required:
+  - (?i)probate|estate|will|trust|inheritance|decedent
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7130,6 +8165,9 @@ rules:
   - nda_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7156,6 +8194,9 @@ rules:
   - contract_reference
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7182,6 +8223,10 @@ rules:
   - fedex_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)fedex|fed\s?ex|fdx|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7208,6 +8253,10 @@ rules:
   - ups_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)ups|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7234,6 +8283,10 @@ rules:
   - usps_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)usps|us\s?mail|postal|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7260,6 +8313,10 @@ rules:
   - dhl_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)dhl|tracking|shipment|package|delivery|express
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7286,6 +8343,9 @@ rules:
   - amazon_tracking
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7312,6 +8372,10 @@ rules:
   - tnt_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)tnt|tracking|shipment|package|delivery|express
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7338,6 +8402,10 @@ rules:
   - china_post_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)china\s?post|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7364,6 +8432,10 @@ rules:
   - japan_post_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)japan\s?post|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7390,6 +8462,10 @@ rules:
   - royal_mail_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)royal\s?mail|tracking|shipment|package|delivery|post\s?office
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7416,6 +8492,10 @@ rules:
   - canada_post_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)canada\s?post|tracking|shipment|package|delivery|postes|canada
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7442,6 +8522,10 @@ rules:
   - australia_post_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)australia\s?post|aus\s?post|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7468,6 +8552,10 @@ rules:
   - purolator_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)purolator|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7494,6 +8582,10 @@ rules:
   - ontrac_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)ontrac|on\s?trac|lasership|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7520,6 +8612,10 @@ rules:
   - gls_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)gls|general\s?logistics|tracking|shipment|package|delivery
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7546,6 +8642,10 @@ rules:
   - aramex_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)aramex|tracking|shipment|package|delivery|express
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7572,6 +8672,10 @@ rules:
   - generic_tracking_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)track|ship|package|delivery|carrier|freight
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7598,6 +8702,10 @@ rules:
   - bill_of_lading
   - needs-context
   validate: null
+  context_required:
+  - (?i)bill\s?of\s?lading|bol|b/l|shipping|freight|cargo|shipment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7624,6 +8732,10 @@ rules:
   - shipping_container_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)container|shipping|freight|cargo|iso\s?6346
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7650,6 +8762,10 @@ rules:
   - air_waybill_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)awb|air\s?waybill|air\s?freight|cargo|shipment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7676,6 +8792,10 @@ rules:
   - pro_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)pro\s?number|freight|ltl|shipment|carrier
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7702,6 +8822,10 @@ rules:
   - master_airway_bill
   - needs-context
   validate: null
+  context_required:
+  - (?i)mawb|master\s?airway|consolidation|freight|cargo
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7728,6 +8852,9 @@ rules:
   - supplier_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7754,6 +8881,10 @@ rules:
   - part_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)part|component|item|sku|product|inventory
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7780,6 +8911,9 @@ rules:
   - purchase_order_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7806,6 +8940,10 @@ rules:
   - work_order_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)work|order|job|task|production
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7832,6 +8970,10 @@ rules:
   - batch_lot_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)batch|lot|production|manufacturing|quality
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7858,6 +9000,10 @@ rules:
   - manufacturing_serial
   - needs-context
   validate: null
+  context_required:
+  - (?i)serial|sn|product|device|unit|item
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7884,6 +9030,10 @@ rules:
   - vendor_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)vendor|supplier|partner|contractor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7910,6 +9060,10 @@ rules:
   - bom_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)bom|bill|materials|assembly|component
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7936,6 +9090,10 @@ rules:
   - qc_certificate_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)quality|qc|certificate|inspection|test|compliance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7962,6 +9120,9 @@ rules:
   - container_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -7988,6 +9149,10 @@ rules:
   - pallet_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)pallet|shipping|warehouse|logistics
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8014,6 +9179,10 @@ rules:
   - routing_number_mfg
   - needs-context
   validate: null
+  context_required:
+  - (?i)routing|manufacturing|process|production|workflow
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8040,6 +9209,10 @@ rules:
   - rfq_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)rfq|quote|quotation|request|procurement
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8066,6 +9239,10 @@ rules:
   - project_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)project|proj|initiative|program|code\s*[:#]
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8092,6 +9269,10 @@ rules:
   - imo_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)imo|ship|vessel|maritime|shipping|marine
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8118,6 +9299,10 @@ rules:
   - mmsi_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)mmsi|maritime|ship|vessel|ais|vhf|radio
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8144,6 +9329,10 @@ rules:
   - maritime_callsign
   - needs-context
   validate: null
+  context_required:
+  - (?i)callsign|call\s?sign|radio|maritime|vessel|ship|vhf
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8170,6 +9359,10 @@ rules:
   - official_ship_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)official|ship|vessel|registration|registry|flag\s?state
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8196,6 +9389,10 @@ rules:
   - psc_inspection_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)psc|port\s?state|inspection|maritime|vessel|ship|compliance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8222,6 +9419,10 @@ rules:
   - seafarer_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)seafarer|mariner|sid|maritime|crew|seaman|sailor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8248,6 +9449,10 @@ rules:
   - lloyds_register_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)lloyd|lr|register|classification|ship|vessel|maritime
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8274,6 +9479,9 @@ rules:
   - interviewee_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8300,6 +9508,10 @@ rules:
   - source_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)source|informant|confidential|anonymous|whistleblower
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8326,6 +9538,10 @@ rules:
   - article_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)article|story|piece|content|publication
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8352,6 +9568,10 @@ rules:
   - manuscript_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)manuscript|ms|draft|submission|review
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8378,6 +9598,10 @@ rules:
   - press_pass_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)press|media|credential|pass|journalist|reporter
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8404,6 +9628,10 @@ rules:
   - contributor_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)contributor|freelancer|writer|author|journalist
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8430,6 +9658,10 @@ rules:
   - publishing_contract
   - needs-context
   validate: null
+  context_required:
+  - (?i)publishing|contract|agreement|deal|rights
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8456,6 +9688,10 @@ rules:
   - editorial_ticket
   - needs-context
   validate: null
+  context_required:
+  - (?i)editorial|edit|task|ticket|assignment
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8482,6 +9718,10 @@ rules:
   - subscriber_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)subscriber|subscription|member|account|reader
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8508,6 +9748,9 @@ rules:
   - isbn
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8534,6 +9777,10 @@ rules:
   - copyright_reg
   - needs-context
   validate: null
+  context_required:
+  - (?i)copyright|registration|intellectual|property|rights
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8560,6 +9807,10 @@ rules:
   - production_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)production|film|video|shoot|project
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8586,6 +9837,10 @@ rules:
   - purchase_order
   - needs-context
   validate: null
+  context_required:
+  - (?i)purchase|order|procurement|buying
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8612,6 +9867,9 @@ rules:
   - rfq_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8638,6 +9896,9 @@ rules:
   - rfp_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8664,6 +9925,10 @@ rules:
   - tender_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)tender|bid|bidding|procurement|competition
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8690,6 +9955,10 @@ rules:
   - supplier_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)supplier|vendor|provider|contractor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8716,6 +9985,10 @@ rules:
   - contract_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)contract|agreement|procurement|supply
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8742,6 +10015,9 @@ rules:
   - requisition_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8768,6 +10044,9 @@ rules:
   - pcard_reference
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8794,6 +10073,10 @@ rules:
   - catalog_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)catalog|part|sku|item|product
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8820,6 +10103,10 @@ rules:
   - quotation_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)quot|price|estimate|proposal
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8846,6 +10133,9 @@ rules:
   - goods_receipt
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8872,6 +10162,10 @@ rules:
   - framework_agreement
   - needs-context
   validate: null
+  context_required:
+  - (?i)framework|agreement|procurement
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8898,6 +10192,9 @@ rules:
   - blanket_order
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8924,6 +10221,10 @@ rules:
   - pmp_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)pmp|project[- ]?management|pmi|certification|certified
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8950,6 +10251,10 @@ rules:
   - cpa_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)cpa|certified[- ]?public[- ]?accountant|accountancy|license|accounting
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -8976,6 +10281,10 @@ rules:
   - pe_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)professional[- ]?engineer|engineering|pe[- ]?license|registered[- ]?engineer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9002,6 +10311,10 @@ rules:
   - nursing_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)nurse|nursing|rn|lpn|registered[- ]?nurse|license|practitioner
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9028,6 +10341,10 @@ rules:
   - teaching_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)teacher|teaching|educator|education|certificate|license|certified
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9054,6 +10371,10 @@ rules:
   - aws_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)aws|amazon[- ]?web[- ]?services|cloud|certification|certified|solutions[- ]?architect
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9080,6 +10401,10 @@ rules:
   - microsoft_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)microsoft|mcid|azure|certification|certified|mcsa|mcse
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9106,6 +10431,10 @@ rules:
   - cisco_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)cisco|ccna|ccnp|ccie|networking|certification|certified
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9132,6 +10461,10 @@ rules:
   - comptia_certification
   - needs-context
   validate: null
+  context_required:
+  - (?i)comptia|a\+|security\+|network\+|certification|certified
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9158,6 +10491,10 @@ rules:
   - finra_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)finra|crd|series|broker|dealer|securities|license|registered
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9184,6 +10521,10 @@ rules:
   - property_parcel_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)property|parcel|assessor|land|real[- ]?estate|apn|tax|deed
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9210,6 +10551,10 @@ rules:
   - mls_listing_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)mls|listing|real[- ]?estate|property|broker|agent|sale|for[- ]sale
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9236,6 +10581,10 @@ rules:
   - mortgage_loan_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)mortgage|loan|lender|lending|home[- ]?loan|refinance|foreclosure|escrow
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9262,6 +10611,10 @@ rules:
   - property_tax_account
   - needs-context
   validate: null
+  context_required:
+  - (?i)property[- ]?tax|municipal|county|city|tax[- ]?bill|assessment|levy
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9288,6 +10641,10 @@ rules:
   - hoa_account_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)hoa|homeowners|association|condo|dues|fee|community
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9314,6 +10671,10 @@ rules:
   - title_deed_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)title|deed|recording|recorder|registry|land[- ]?registry|conveyance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9340,6 +10701,10 @@ rules:
   - real_estate_license
   - needs-context
   validate: null
+  context_required:
+  - (?i)real[- ]?estate|broker|agent|license|realtor|certified
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9366,6 +10731,10 @@ rules:
   - appraisal_reference
   - needs-context
   validate: null
+  context_required:
+  - (?i)appraisal|appraiser|valuation|value|assessment|market[- ]?value
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9392,6 +10761,10 @@ rules:
   - escrow_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)escrow|closing|settlement|title[- ]?company|transaction
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9418,6 +10791,10 @@ rules:
   - lease_agreement_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)lease|rental|tenant|landlord|rent|renter|apartment|unit
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9444,6 +10821,9 @@ rules:
   - order_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9470,6 +10850,10 @@ rules:
   - loyalty_card_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)loyalty|rewards|points|membership|customer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9496,6 +10880,10 @@ rules:
   - customer_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)customer|account|profile|user|buyer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9522,6 +10910,9 @@ rules:
   - device_id_tag
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9548,6 +10939,10 @@ rules:
   - gift_card_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)gift|card|voucher|coupon|certificate
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9574,6 +10969,10 @@ rules:
   - rma_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)rma|return|refund|exchange|merchandise
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9600,6 +10999,10 @@ rules:
   - shipping_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)tracking|shipment|delivery|package|parcel|courier
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9626,6 +11029,10 @@ rules:
   - invoice_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)invoice|bill|payment|receipt|purchase
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9652,6 +11059,10 @@ rules:
   - cart_session_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)cart|session|basket|checkout
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9678,6 +11089,10 @@ rules:
   - promo_code
   - needs-context
   validate: null
+  context_required:
+  - (?i)promo|coupon|discount|code|voucher|offer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9704,6 +11119,10 @@ rules:
   - wishlist_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)wishlist|wish|list|saved|favorite
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9730,6 +11149,9 @@ rules:
   - product_sku
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9756,6 +11178,9 @@ rules:
   - aws_access_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9782,6 +11207,9 @@ rules:
   - openai_api_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9808,6 +11236,9 @@ rules:
   - aws_secret_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9834,6 +11265,9 @@ rules:
   - google_api_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9860,6 +11294,9 @@ rules:
   - stripe_api_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9886,6 +11323,9 @@ rules:
   - github_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9912,6 +11352,9 @@ rules:
   - jwt_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9938,6 +11381,10 @@ rules:
   - generic_api_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)example|sample|test|fake|demo|placeholder|xxx
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9964,6 +11411,9 @@ rules:
   - private_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -9990,6 +11440,9 @@ rules:
   - ssh_private_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10016,6 +11469,9 @@ rules:
   - database_connection
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10042,6 +11498,9 @@ rules:
   - aws_arn
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10068,6 +11527,9 @@ rules:
   - docker_auth
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10094,6 +11556,9 @@ rules:
   - slack_webhook
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10120,6 +11585,9 @@ rules:
   - slack_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10146,6 +11614,10 @@ rules:
   - twilio_api_key
   - needs-context
   validate: null
+  context_required:
+  - (?i)twilio|sms|phone|messaging
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10172,6 +11644,10 @@ rules:
   - mailgun_api_key
   - needs-context
   validate: null
+  context_required:
+  - (?i)mailgun|email|mail
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10198,6 +11674,9 @@ rules:
   - sendgrid_api_key
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10224,6 +11703,9 @@ rules:
   - session_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10250,6 +11732,9 @@ rules:
   - bearer_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10276,6 +11761,10 @@ rules:
   - azure_resource_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)azure|microsoft|cloud|resource
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10302,6 +11791,10 @@ rules:
   - azure_storage_key
   - needs-context
   validate: null
+  context_required:
+  - (?i)azure|storage|account|connection
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10328,6 +11821,9 @@ rules:
   - gcp_service_account
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10354,6 +11850,10 @@ rules:
   - kubernetes_secret
   - needs-context
   validate: null
+  context_required:
+  - (?i)kubernetes|k8s|secret|configmap
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10380,6 +11880,9 @@ rules:
   - cookie_session
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10406,6 +11909,9 @@ rules:
   - npm_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10432,6 +11938,9 @@ rules:
   - pypi_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10458,6 +11967,10 @@ rules:
   - heroku_api_key
   - needs-context
   validate: null
+  context_required:
+  - (?i)heroku|api.key|auth
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10484,6 +11997,10 @@ rules:
   - firebase_api_key
   - needs-context
   validate: null
+  context_required:
+  - (?i)firebase|google|cloud
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10510,6 +12027,9 @@ rules:
   - oauth_client_secret
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10536,6 +12056,9 @@ rules:
   - oauth_token
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10562,6 +12085,10 @@ rules:
   - telecoms_account_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)account|customer|subscriber|service|utility|telecom
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10588,6 +12115,9 @@ rules:
   - meter_serial_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10614,6 +12144,9 @@ rules:
   - imsi_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10640,6 +12173,9 @@ rules:
   - imei_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10666,6 +12202,10 @@ rules:
   - sim_card_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)sim|card|mobile|cellular|phone
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10692,6 +12232,10 @@ rules:
   - service_request_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)service|request|ticket|support|maintenance|repair
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10718,6 +12262,10 @@ rules:
   - utility_bill_account
   - needs-context
   validate: null
+  context_required:
+  - (?i)bill|billing|utility|electric|gas|water|energy
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10744,6 +12292,10 @@ rules:
   - installation_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)installation|install|setup|deployment|activation
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10770,6 +12322,10 @@ rules:
   - phone_line_number
   - needs-context
   validate: phone
+  context_required:
+  - (?i)phone|line|number|mobile|landline|telephone
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10796,6 +12352,10 @@ rules:
   - broadband_service_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)broadband|internet|isp|connection|service
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10822,6 +12382,10 @@ rules:
   - equipment_serial
   - needs-context
   validate: null
+  context_required:
+  - (?i)equipment|device|router|modem|serial|hardware
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10848,6 +12412,10 @@ rules:
   - smart_meter_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)smart|meter|energy|electric|gas|monitoring
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10874,6 +12442,9 @@ rules:
   - vin
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10900,6 +12471,10 @@ rules:
   - license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)license|plate|registration|vehicle|car|auto
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10926,6 +12501,10 @@ rules:
   - fleet_vehicle_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)fleet|vehicle|car|truck|van|unit
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10952,6 +12531,10 @@ rules:
   - telematics_device_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)telematics|gps|tracking|device|monitor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -10978,6 +12561,10 @@ rules:
   - booking_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)booking|reservation|ticket|travel|flight|train|bus
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11004,6 +12591,10 @@ rules:
   - driver_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)driver|operator|chauffeur
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11030,6 +12621,10 @@ rules:
   - shipment_tracking
   - needs-context
   validate: null
+  context_required:
+  - (?i)shipment|tracking|delivery|freight|cargo
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11056,6 +12651,10 @@ rules:
   - toll_tag_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)toll|tag|ezpass|transponder|fastrak
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11082,6 +12681,10 @@ rules:
   - inspection_certificate
   - needs-context
   validate: null
+  context_required:
+  - (?i)inspection|certificate|safety|emissions|test
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11108,6 +12711,10 @@ rules:
   - odometer_reading_ref
   - needs-context
   validate: null
+  context_required:
+  - (?i)odometer|mileage|miles|km|reading
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11134,6 +12741,10 @@ rules:
   - vehicle_insurance_policy
   - needs-context
   validate: null
+  context_required:
+  - (?i)auto|vehicle|car|insurance|policy|coverage
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11160,6 +12771,10 @@ rules:
   - trip_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)trip|ride|journey|fare|taxi|uber|lyft
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11186,6 +12801,10 @@ rules:
   - vin_number
   - needs-context
   validate: null
+  context_required:
+  - (?i)vin|vehicle|car|auto|motor|registration|title|insurance
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11212,6 +12831,9 @@ rules:
   - us_license_plate
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11238,6 +12860,10 @@ rules:
   - california_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)california|ca\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11264,6 +12890,10 @@ rules:
   - new_york_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)new\s?york|ny\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11290,6 +12920,10 @@ rules:
   - texas_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)texas|tx\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11316,6 +12950,10 @@ rules:
   - florida_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)florida|fl\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11342,6 +12980,10 @@ rules:
   - illinois_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)illinois|il\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11368,6 +13010,10 @@ rules:
   - pennsylvania_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)pennsylvania|pa\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11394,6 +13040,10 @@ rules:
   - ohio_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)ohio|oh\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11420,6 +13070,10 @@ rules:
   - michigan_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)michigan|mi\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11446,6 +13100,10 @@ rules:
   - georgia_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)georgia|ga\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11472,6 +13130,10 @@ rules:
   - north_carolina_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)north\s?carolina|nc\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11498,6 +13160,10 @@ rules:
   - new_jersey_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)new\s?jersey|nj\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11524,6 +13190,10 @@ rules:
   - virginia_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)virginia|va\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11550,6 +13220,10 @@ rules:
   - washington_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)washington|wa\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11576,6 +13250,10 @@ rules:
   - massachusetts_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)massachusetts|ma\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11602,6 +13280,10 @@ rules:
   - arizona_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)arizona|az\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11628,6 +13310,10 @@ rules:
   - tennessee_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)tennessee|tn\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11654,6 +13340,10 @@ rules:
   - indiana_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)indiana|in\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11680,6 +13370,10 @@ rules:
   - missouri_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)missouri|mo\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11706,6 +13400,10 @@ rules:
   - maryland_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)maryland|md\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11732,6 +13430,10 @@ rules:
   - wisconsin_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)wisconsin|wi\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11758,6 +13460,10 @@ rules:
   - colorado_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)colorado|co\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11784,6 +13490,10 @@ rules:
   - minnesota_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)minnesota|mn\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11810,6 +13520,10 @@ rules:
   - south_carolina_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)south\s?carolina|sc\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11836,6 +13550,10 @@ rules:
   - alabama_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)alabama|al\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11862,6 +13580,10 @@ rules:
   - louisiana_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)louisiana|la\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11888,6 +13610,10 @@ rules:
   - kentucky_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)kentucky|ky\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11914,6 +13640,10 @@ rules:
   - oregon_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)oregon|or\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11940,6 +13670,10 @@ rules:
   - oklahoma_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)oklahoma|ok\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11966,6 +13700,10 @@ rules:
   - connecticut_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)connecticut|ct\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -11992,6 +13730,10 @@ rules:
   - utah_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)utah|ut\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12018,6 +13760,10 @@ rules:
   - iowa_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)iowa|ia\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12044,6 +13790,10 @@ rules:
   - nevada_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)nevada|nv\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12070,6 +13820,10 @@ rules:
   - arkansas_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)arkansas|ar\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12096,6 +13850,10 @@ rules:
   - mississippi_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)mississippi|ms\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12122,6 +13880,10 @@ rules:
   - kansas_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)kansas|ks\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12148,6 +13910,10 @@ rules:
   - new_mexico_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)new\s?mexico|nm\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12174,6 +13940,10 @@ rules:
   - nebraska_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)nebraska|ne\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12200,6 +13970,10 @@ rules:
   - west_virginia_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)west\s?virginia|wv\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12226,6 +14000,10 @@ rules:
   - idaho_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)idaho|id\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12252,6 +14030,10 @@ rules:
   - hawaii_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)hawaii|hi\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12278,6 +14060,10 @@ rules:
   - new_hampshire_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)new\s?hampshire|nh\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12304,6 +14090,10 @@ rules:
   - maine_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)maine|me\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12330,6 +14120,10 @@ rules:
   - montana_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)montana|mt\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12356,6 +14150,10 @@ rules:
   - rhode_island_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)rhode\s?island|ri\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12382,6 +14180,10 @@ rules:
   - delaware_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)delaware|de\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12408,6 +14210,10 @@ rules:
   - south_dakota_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)south\s?dakota|sd\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12434,6 +14240,10 @@ rules:
   - north_dakota_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)north\s?dakota|nd\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12460,6 +14270,10 @@ rules:
   - alaska_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)alaska|ak\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12486,6 +14300,10 @@ rules:
   - vermont_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)vermont|vt\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12512,6 +14330,10 @@ rules:
   - wyoming_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)wyoming|wy\s|plate|license|dmv|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12538,6 +14360,10 @@ rules:
   - uk_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)uk|british|britain|registration|number\s?plate|vehicle|dvla
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12564,6 +14390,10 @@ rules:
   - german_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)german|deutschland|kennzeichen|license|plate|vehicle|kfz
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12590,6 +14420,10 @@ rules:
   - french_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)french|france|immatriculation|license|plate|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12616,6 +14450,10 @@ rules:
   - canadian_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)canad|ontario|quebec|british\s?columbia|alberta|plate|license|vehicle
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12642,6 +14480,10 @@ rules:
   - australian_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)australia|nsw|victoria|queensland|south\s?australia|plate|license|rego|registration
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12668,6 +14510,10 @@ rules:
   - japanese_license_plate
   - needs-context
   validate: null
+  context_required:
+  - "(?i)japan|japanese|ã\x83\x8Aã\x83³ã\x83\x90ã\x83¼|è»\x8Aä¸¡|plate|license|vehicle"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12694,6 +14540,10 @@ rules:
   - international_license_plate
   - needs-context
   validate: null
+  context_required:
+  - (?i)plate|registration|license|vehicle|car|motor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12720,6 +14570,10 @@ rules:
   - south_africa_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)south[- ]?africa|rsa|za|national[- ]?id|identity|id[- ]?number
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12738,14 +14592,17 @@ rules:
   strip_quotes: false
   placeholder: NIGERIA_NIN
   priority: 95
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - nigeria_nin
-  - needs-context
   validate: null
+  context_required:
+  - (?i)nigeria|nin|national[- ]?id|identity|nigerian
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12771,6 +14628,10 @@ rules:
   - openredaction
   - nigeria_bvn
   validate: null
+  context_required:
+  - (?i)bvn|bank[- ]?verification|nigeria|nigerian|banking
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12797,6 +14658,10 @@ rules:
   - kenya_national_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)kenya|kenyan|national[- ]?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12822,6 +14687,10 @@ rules:
   - openredaction
   - kenya_kra_pin
   validate: null
+  context_required:
+  - (?i)kra|kenya|revenue|authority|tax|pin|taxpayer
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12848,6 +14717,10 @@ rules:
   - egypt_national_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)egypt|egyptian|national[- ]?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12873,6 +14746,10 @@ rules:
   - openredaction
   - ghana_card
   validate: null
+  context_required:
+  - (?i)ghana|ghanaian|ghana[- ]?card|national[- ]?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12898,6 +14775,10 @@ rules:
   - openredaction
   - morocco_national_id
   validate: null
+  context_required:
+  - (?i)morocco|moroccan|cnie|national[- ]?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12923,6 +14804,10 @@ rules:
   - openredaction
   - kazakhstan_iin
   validate: null
+  context_required:
+  - "(?i)kazakh|kazakhstan|iin|Ð¶Ñ\x81Ð½|individual\\s?identification"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12948,6 +14833,10 @@ rules:
   - openredaction
   - uzbekistan_passport
   validate: null
+  context_required:
+  - (?i)uzbek|uzbekistan|passport|pasport
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12973,6 +14862,10 @@ rules:
   - openredaction
   - uzbekistan_stir
   validate: null
+  context_required:
+  - (?i)uzbek|uzbekistan|stir|tax|inn|soliq
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -12998,6 +14891,10 @@ rules:
   - openredaction
   - kyrgyzstan_pin
   validate: null
+  context_required:
+  - "(?i)kyrgyz|kyrgyzstan|pin|Ð»Ð¸Ñ\x87Ð½Ñ\x8BÐ¹|Ð½Ð¾Ð¼ÐµÑ\x80"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13023,6 +14920,10 @@ rules:
   - openredaction
   - tajikistan_national_id
   validate: null
+  context_required:
+  - (?i)tajik|tajikistan|national\s?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13048,6 +14949,10 @@ rules:
   - openredaction
   - turkmenistan_passport
   validate: null
+  context_required:
+  - (?i)turkmen|turkmenistan|passport|pasport
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13074,6 +14979,10 @@ rules:
   - russian_passport
   - needs-context
   validate: null
+  context_required:
+  - "(?i)russia|russian|passport|Ð¿Ð°Ñ\x81Ð¿Ð¾Ñ\x80Ñ\x82|Ñ\x80Ð¾Ñ\x81Ñ\x81Ð¸Ð¹Ñ\x81ÐºÐ¸Ð¹"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13092,14 +15001,17 @@ rules:
   strip_quotes: false
   placeholder: RUSSIAN_SNILS
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - russian_snils
-  - needs-context
   validate: null
+  context_required:
+  - "(?i)russia|russian|snils|Ñ\x81Ð½Ð¸Ð»Ñ\x81|pension|Ð¿ÐµÐ½Ñ\x81Ð¸Ð¾Ð½Ð½Ñ\x8BÐ¹"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13125,6 +15037,10 @@ rules:
   - openredaction
   - ukrainian_passport
   validate: null
+  context_required:
+  - "(?i)ukrain|passport|Ð¿Ð°Ñ\x81Ð¿Ð¾Ñ\x80Ñ\x82|Ñ\x83ÐºÑ\x80Ð°Ñ\x97Ð½Ñ\x81Ñ\x8CÐºÐ¸Ð¹"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13150,6 +15066,10 @@ rules:
   - openredaction
   - ukrainian_inn
   validate: null
+  context_required:
+  - "(?i)ukrain|inn|tax|Ð¿Ð¾Ð´Ð°Ñ\x82ÐºÐ¾Ð²Ð¸Ð¹|Ñ\x96Ð½Ð½"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13176,6 +15096,9 @@ rules:
   - czech_national_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13201,6 +15124,10 @@ rules:
   - openredaction
   - romanian_cnp
   validate: null
+  context_required:
+  - (?i)romania|romanian|cnp|cod\s?numeric|personal
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13226,6 +15153,10 @@ rules:
   - openredaction
   - hungarian_personal_id
   validate: null
+  context_required:
+  - (?i)hungar|magyar|szemÃ©lyi|igazolvÃ¡ny|personal\s?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13252,6 +15183,10 @@ rules:
   - hungarian_tax_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)hungar|magyar|adÃ³|tax|adÃ³azonosÃ­tÃ³
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13270,14 +15205,17 @@ rules:
   strip_quotes: false
   placeholder: BULGARIAN_PERSONAL_NUMBER
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - bulgarian_personal_number
-  - needs-context
   validate: null
+  context_required:
+  - (?i)bulgaria|bulgarian|ÐµÐ³Ð½|personal\s?number|ÐµÐ´Ð¸Ð½ÐµÐ½
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13296,14 +15234,17 @@ rules:
   strip_quotes: false
   placeholder: SERBIAN_JMBG
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - serbian_jmbg
-  - needs-context
   validate: null
+  context_required:
+  - "(?i)serb|serbia|jmbg|jedinstveni|matiÄ\x8Dni|personal"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13330,6 +15271,10 @@ rules:
   - argentina_dni
   - needs-context
   validate: null
+  context_required:
+  - (?i)argentina|argentin|dni|documento\s?nacional|identidad
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13348,14 +15293,17 @@ rules:
   strip_quotes: false
   placeholder: ARGENTINA_CUIT
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - argentina_cuit
-  - needs-context
   validate: null
+  context_required:
+  - (?i)argentina|cuit|cuil|tax|impuesto|tributario
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13381,6 +15329,10 @@ rules:
   - openredaction
   - chile_rut
   validate: null
+  context_required:
+  - (?i)chile|chilean|rut|rol\s?Ãºnico|tributario|cÃ©dula
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13406,6 +15358,10 @@ rules:
   - openredaction
   - colombia_cedula
   validate: null
+  context_required:
+  - (?i)colombia|colombian|cÃ©dula|cedula|ciudadanÃ­a|cc\s
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13431,6 +15387,10 @@ rules:
   - openredaction
   - colombia_nit
   validate: null
+  context_required:
+  - (?i)colombia|nit|tax|impuesto|tributario|empresa
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13457,6 +15417,10 @@ rules:
   - peru_dni
   - needs-context
   validate: null
+  context_required:
+  - (?i)peru|peruvian|perÃº|peruano|dni|documento\s?nacional|identidad|reniec
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13482,6 +15446,10 @@ rules:
   - openredaction
   - peru_ruc
   validate: null
+  context_required:
+  - (?i)peru|perÃº|ruc|tax|sunat|tributario
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13507,6 +15475,10 @@ rules:
   - openredaction
   - venezuela_cedula
   validate: null
+  context_required:
+  - (?i)venezuela|venezuelan|cÃ©dula|cedula|identidad|ci\s
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13532,6 +15504,10 @@ rules:
   - openredaction
   - venezuela_rif
   validate: null
+  context_required:
+  - (?i)venezuela|rif|tax|seniat|tributario
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13550,14 +15526,17 @@ rules:
   strip_quotes: false
   placeholder: ECUADOR_CEDULA
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - ecuador_cedula
-  - needs-context
   validate: null
+  context_required:
+  - (?i)ecuador|ecuadorian|cÃ©dula|cedula|identidad
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13576,14 +15555,17 @@ rules:
   strip_quotes: false
   placeholder: URUGUAY_CEDULA
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - uruguay_cedula
-  - needs-context
   validate: null
+  context_required:
+  - (?i)uruguay|uruguayan|cÃ©dula|cedula|identidad
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13610,6 +15592,10 @@ rules:
   - uae_emirates_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)uae|emirates|dubai|abu[- ]?dhabi|national[- ]?id|emirates[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13636,6 +15622,10 @@ rules:
   - saudi_national_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)saudi|ksa|kingdom|iqama|national[- ]?id|muqeem
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13662,6 +15652,10 @@ rules:
   - israel_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)israel|teudat|zehut|israeli|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13688,6 +15682,10 @@ rules:
   - turkey_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)turkey|turkish|tc|kimlik|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13714,6 +15712,10 @@ rules:
   - qatar_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)qatar|qid|doha|national[- ]?id|resident[- ]?permit
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13740,6 +15742,10 @@ rules:
   - kuwait_civil_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)kuwait|civil[- ]?id|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13758,14 +15764,17 @@ rules:
   strip_quotes: false
   placeholder: BAHRAIN_CPR
   priority: 85
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - bahrain_cpr
-  - needs-context
   validate: null
+  context_required:
+  - (?i)bahrain|cpr|central[- ]?population|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13792,6 +15801,10 @@ rules:
   - oman_civil_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)oman|muscat|civil[- ]?id|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13818,6 +15831,10 @@ rules:
   - jordan_national_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)jordan|amman|national[- ]?id|jordanian
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13844,6 +15861,10 @@ rules:
   - lebanon_national_id
   - needs-context
   validate: null
+  context_required:
+  - (?i)lebanon|lebanese|beirut|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13869,6 +15890,10 @@ rules:
   - openredaction
   - new_zealand_driver_license
   validate: null
+  context_required:
+  - (?i)new\s?zealand|nz|kiwi|driver|license|licence
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13894,6 +15919,10 @@ rules:
   - openredaction
   - new_zealand_ird
   validate: null
+  context_required:
+  - (?i)new\s?zealand|nz|ird|tax|inland\s?revenue
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13919,6 +15948,10 @@ rules:
   - openredaction
   - new_zealand_passport
   validate: null
+  context_required:
+  - (?i)new\s?zealand|nz|passport|travel\s?document
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13944,6 +15977,10 @@ rules:
   - openredaction
   - fiji_national_id
   validate: null
+  context_required:
+  - (?i)fiji|fijian|national\s?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13969,6 +16006,10 @@ rules:
   - openredaction
   - png_national_id
   validate: null
+  context_required:
+  - (?i)papua|png|new\s?guinea|national\s?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -13994,6 +16035,10 @@ rules:
   - openredaction
   - samoa_national_id
   validate: null
+  context_required:
+  - (?i)samoa|samoan|national\s?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14019,6 +16064,10 @@ rules:
   - openredaction
   - tonga_national_id
   validate: null
+  context_required:
+  - (?i)tonga|tongan|national\s?id|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14037,14 +16086,17 @@ rules:
   strip_quotes: false
   placeholder: INDONESIA_NIK
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - indonesia_nik
-  - needs-context
   validate: null
+  context_required:
+  - (?i)indonesia|indonesian|nik|nomor[- ]?induk|ktp|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14063,14 +16115,17 @@ rules:
   strip_quotes: false
   placeholder: INDONESIA_NPWP
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - indonesia_npwp
-  - needs-context
   validate: null
+  context_required:
+  - (?i)indonesia|npwp|tax|pajak|wajib[- ]?pajak
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14097,6 +16152,10 @@ rules:
   - thailand_national_id
   - needs-context
   validate: null
+  context_required:
+  - "(?i)thailand|thai|national[- ]?id|à¸\x9Aà¸±à¸\x95à¸£|à¸\x9Bà¸£à¸°à¸\x8Aà¸²à¸\x8Aà¸\x99"
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14115,14 +16174,17 @@ rules:
   strip_quotes: false
   placeholder: MALAYSIA_MYKAD
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - malaysia_mykad
-  - needs-context
   validate: null
+  context_required:
+  - (?i)malaysia|malaysian|mykad|ic[- ]?number|kad[- ]?pengenalan
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14141,14 +16203,17 @@ rules:
   strip_quotes: false
   placeholder: PHILIPPINES_UMID
   priority: 85
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - philippines_umid
-  - needs-context
   validate: null
+  context_required:
+  - (?i)philippines|filipino|umid|unified|multipurpose|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14167,14 +16232,17 @@ rules:
   strip_quotes: false
   placeholder: VIETNAM_CCCD
   priority: 85
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - vietnam_cccd
-  - needs-context
   validate: null
+  context_required:
+  - (?i)vietnam|vietnamese|cccd|citizen[- ]?identity|cmnd|national[- ]?id
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14200,6 +16268,10 @@ rules:
   - openredaction
   - myanmar_nrc
   validate: null
+  context_required:
+  - (?i)myanmar|burmese|nrc|national[- ]?registration|identity
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14226,6 +16298,9 @@ rules:
   - german_tax_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14252,6 +16327,9 @@ rules:
   - french_social_security
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14270,13 +16348,17 @@ rules:
   strip_quotes: false
   placeholder: SPANISH_DNI
   priority: 90
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - spanish_dni
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14295,13 +16377,17 @@ rules:
   strip_quotes: false
   placeholder: ITALIAN_FISCAL_CODE
   priority: 90
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - italian_fiscal_code
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14320,14 +16406,17 @@ rules:
   strip_quotes: false
   placeholder: DUTCH_BSN
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - dutch_bsn
-  - needs-context
   validate: null
+  context_required:
+  - (?i)bsn|dutch|netherlands|nederland|burger
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14346,14 +16435,17 @@ rules:
   strip_quotes: false
   placeholder: POLISH_PESEL
   priority: 90
-  enabled: false
+  enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - polish_pesel
-  - needs-context
   validate: null
+  context_required:
+  - (?i)pesel|polish|poland|polska
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14380,6 +16472,9 @@ rules:
   - indian_aadhaar
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14406,6 +16501,9 @@ rules:
   - australian_medicare
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14432,6 +16530,9 @@ rules:
   - australian_tfn
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14450,13 +16551,17 @@ rules:
   strip_quotes: false
   placeholder: SINGAPORE_NRIC
   priority: 90
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - singapore_nric
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14483,6 +16588,9 @@ rules:
   - japanese_my_number
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14509,6 +16617,9 @@ rules:
   - south_korean_rrn
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14535,6 +16646,9 @@ rules:
   - canadian_sin
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14561,6 +16675,9 @@ rules:
   - brazilian_cpf
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14587,6 +16704,9 @@ rules:
   - brazilian_cnpj
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14605,13 +16725,17 @@ rules:
   strip_quotes: false
   placeholder: MEXICAN_CURP
   priority: 90
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - mexican_curp
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14630,13 +16754,17 @@ rules:
   strip_quotes: false
   placeholder: MEXICAN_RFC
   priority: 90
-  enabled: true
+  enabled: false
   paths: []
   exclude_paths: []
   tags:
   - openredaction
   - mexican_rfc
+  - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14662,6 +16790,9 @@ rules:
   - openredaction
   - ipv4
   validate: ipv4
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14687,6 +16818,9 @@ rules:
   - openredaction
   - ipv6
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14712,6 +16846,9 @@ rules:
   - openredaction
   - mac_address
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14737,6 +16874,9 @@ rules:
   - openredaction
   - url_with_auth
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14762,6 +16902,9 @@ rules:
   - openredaction
   - iot_serial_number
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14787,6 +16930,10 @@ rules:
   - openredaction
   - device_uuid
   validate: null
+  context_required:
+  - (?i)device|uuid|identifier|hardware|iot|sensor
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14812,6 +16959,10 @@ rules:
   - openredaction
   - email
   validate: email
+  context_required: []
+  context_excluded:
+  - (?i)your\.email|placeholder|fake
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14838,6 +16989,11 @@ rules:
   - name
   - needs-context
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)\b(company|corporation|inc|llc|ltd|corp|organization|business|enterprise|firm|agency)\b
+  - (?i)example|test|sample|demo|fake|placeholder|john\s+doe|jane\s+smith
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14864,6 +17020,9 @@ rules:
   - employee_id
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14890,6 +17049,9 @@ rules:
   - username
   - needs-context
   validate: null
+  context_required: []
+  context_excluded: []
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14915,6 +17077,11 @@ rules:
   - openredaction
   - date_of_birth
   validate: null
+  context_required:
+  - (?i)dob|date\s+of\s+birth|birth\s+date|birth
+  context_excluded:
+  - (?i)example|test|sample|demo|fake|placeholder
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -14940,6 +17107,10 @@ rules:
   - openredaction
   - date
   validate: null
+  context_required: []
+  context_excluded:
+  - (?i)\b(version|v\d+|release|build|update)\s*[:\s]*
+  context_window: 200
   name_pattern: null
   name_match: search
   allow_keys: []

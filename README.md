@@ -220,11 +220,12 @@ Der Importer liest die TypeScript-Pattern-Objekte. Nicht unterstützte
 Regex-Konstrukte werden mit Hinweis übersprungen. Es werden **alle** Patterns
 importiert, die OpenRedaction anbietet.
 
-Breite, kontextabhängige OpenRedaction-Patterns (z. B. `NAME`, `USERNAME`,
-nationale IDs, Nummern-IDs) werden zwar importiert, aber standardmäßig
-**deaktiviert** und mit `needs-context` getaggt. Ihre JS-Validatoren können wir
-nicht ausführen; ohne diese Validatoren würden sie zu viele False Positives
-erzeugen. Gezielt aktivieren:
+Einfache OpenRedaction-Kontextchecks (`regex.test(context)`) werden als
+`context_required` / `context_excluded` importiert und bei der Erkennung
+berücksichtigt. Komplexe JS-Validatoren können wir nicht exakt ausführen.
+Breite Patterns (z. B. `NAME`, `USERNAME`, nationale Nummern-IDs) sowie
+Industry-/Digital-Identity-Patterns bleiben deshalb standardmäßig
+**deaktiviert** und mit `needs-context` getaggt. Gezielt aktivieren:
 
 ```yaml
 enable_rules:

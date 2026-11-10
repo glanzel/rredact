@@ -631,6 +631,9 @@ fn parse_gitleaks(text: &str, path: &Path) -> Result<Vec<RuleConfig>> {
                 tags
             },
             validate: None,
+            context_required: Vec::new(),
+            context_excluded: Vec::new(),
+            context_window: 200,
             name_pattern: None,
             name_match: "search".into(),
             allow_keys: Vec::new(),

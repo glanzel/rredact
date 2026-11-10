@@ -241,10 +241,14 @@ fn parse_typescript_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<
                 pattern_type,
                 "CREDIT_CARD" | "IPV4" | "SSN" | "SIN_CA" | "ITIN" | "EIN" | "NHS_NUMBER"
             );
+        let (context_required, context_excluded) = extract_context_checks(segment);
+        let has_context_code = segment.contains("context");
+        let context_supported = !context_required.is_empty() || !context_excluded.is_empty();
         let needs_context = DISABLE_TYPES.contains(&pattern_type)
             || file_default_disabled
+            || (has_context_code && !context_supported)
             || (context_heavy_name && is_numeric_only_pattern(&pattern))
-            || (is_numeric_only_pattern(&pattern) && !safe_numeric);
+            || (is_numeric_only_pattern(&pattern) && !safe_numeric && !context_supported);
         let mut tags = vec!["openredaction".into(), pattern_type.to_ascii_lowercase()];
         if needs_context {
             tags.push("needs-context".into());
@@ -270,6 +274,9 @@ fn parse_typescript_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<
             exclude_paths: Vec::new(),
             tags,
             validate,
+            context_required,
+            context_excluded,
+            context_window: 200,
             name_pattern: None,
             name_match: "search".into(),
             allow_keys: Vec::new(),
@@ -346,6 +353,10 @@ fn parse_js_string(value: &str) -> Option<String> {
 }
 
 fn parse_regex_literal(value: &str) -> Option<(String, String)> {
+    parse_regex_literal_with_end(value).map(|(pattern, flags, _)| (pattern, flags))
+}
+
+fn parse_regex_literal_with_end(value: &str) -> Option<(String, String, usize)> {
     let value = value.trim_start();
     if !value.starts_with('/') {
         return None;
@@ -377,13 +388,118 @@ fn parse_regex_literal(value: &str) -> Option<(String, String)> {
                 .chars()
                 .take_while(|ch| ch.is_ascii_alphabetic())
                 .collect();
-            return Some((pattern, flags));
+            return Some((pattern, flags.clone(), index + 1 + flags.len()));
         } else {
             pattern.push(ch);
         }
         index += 1;
     }
     None
+}
+
+fn extract_context_checks(segment: &str) -> (Vec<String>, Vec<String>) {
+    let Some(validator_start) = segment.find("validator:") else {
+        return (Vec::new(), Vec::new());
+    };
+    let body = &segment[validator_start..];
+    let mut required = Vec::new();
+    let mut excluded = Vec::new();
+    let mut variables = std::collections::HashMap::new();
+
+    let assignment = Regex::new(r"(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*").unwrap();
+    for captures in assignment.captures_iter(body) {
+        let Some(name) = captures.get(1).map(|m| m.as_str().to_string()) else {
+            continue;
+        };
+        let Some(rest) = captures.get(0).map(|m| &body[m.end()..]) else {
+            continue;
+        };
+        if let Some((pattern, flags, _)) = parse_regex_literal_with_end(rest) {
+            if let Some(value) = inline_context_pattern(&pattern, &flags) {
+                variables.insert(name, value);
+            }
+        }
+    }
+
+    let test_pattern = Regex::new(r"([A-Za-z_$][A-Za-z0-9_$]*)\.test\(\s*_?context\s*\)").unwrap();
+    for captures in test_pattern.captures_iter(body) {
+        let Some(name) = captures.get(1).map(|m| m.as_str()) else {
+            continue;
+        };
+        let Some(pattern) = variables.get(name).cloned() else {
+            continue;
+        };
+        let position = captures.get(0).map(|m| m.start()).unwrap_or(0);
+        match classify_context_test(body, position) {
+            Some(true) => required.push(pattern),
+            Some(false) => excluded.push(pattern),
+            None => {}
+        }
+    }
+
+    let bytes = body.as_bytes();
+    let mut index = 0usize;
+    while index < bytes.len() {
+        if bytes[index] == b'/' {
+            if bytes.get(index + 1) == Some(&b'/') || bytes.get(index + 1) == Some(&b'*') {
+                index += 2;
+                continue;
+            }
+            if let Some((pattern, flags, end)) = parse_regex_literal_with_end(&body[index..]) {
+                let rest = body[index + end..].trim_start();
+                if rest.starts_with(".test(") {
+                    let call_end = rest.find(')').unwrap_or(rest.len());
+                    let argument = &rest[..call_end];
+                    if argument.contains("context") {
+                        if let Some(value) = inline_context_pattern(&pattern, &flags) {
+                            match classify_context_test(body, index) {
+                                Some(true) => required.push(value),
+                                Some(false) => excluded.push(value),
+                                None => {}
+                            }
+                        }
+                    }
+                }
+                index += end;
+                continue;
+            }
+        }
+        index += 1;
+    }
+
+    required.sort();
+    required.dedup();
+    excluded.sort();
+    excluded.dedup();
+    (required, excluded)
+}
+
+fn classify_context_test(body: &str, position: usize) -> Option<bool> {
+    let prefix = &body[..position];
+    let last_return = prefix.rfind("return");
+    let last_if = prefix.rfind("if");
+    let (keyword, keyword_start) = match (last_return, last_if) {
+        (Some(ret), Some(iff)) if ret > iff => ("return", ret),
+        (Some(_), Some(iff)) => ("if", iff),
+        (Some(ret), None) => ("return", ret),
+        (None, Some(iff)) => ("if", iff),
+        (None, None) => return None,
+    };
+    let between = &prefix[keyword_start + keyword.len()..];
+    let negated = between.contains('!');
+    Some(match keyword {
+        "return" => !negated,
+        "if" => negated,
+        _ => return None,
+    })
+}
+
+fn inline_context_pattern(pattern: &str, flags: &str) -> Option<String> {
+    let (pattern, flags) = sanitize_regex(pattern, flags)?;
+    Some(match flags {
+        Some(flags) if !flags.is_empty() => format!("(?{flags}){pattern}"),
+        _ => pattern,
+    })
 }
 
 fn sanitize_regex(pattern: &str, flags: &str) -> Option<(String, Option<String>)> {

@@ -328,3 +328,26 @@ fn context_rules_can_be_enabled_as_a_group() {
         .unwrap();
     assert!(rule.enabled);
 }
+
+#[test]
+fn context_required_blocks_matches_without_context() {
+    let project = project_with_config(Some(
+        "builtin: []\nsources: []\nrules:\n  - id: context-demo\n    description: Context demo\n    category: secret\n    severity: high\n    pattern: '\\bSECRET-[0-9]{4}\\b'\n    context_required: ['(?i)invoice|bill']\n    placeholder: CONTEXT_DEMO\n",
+    ));
+    let mut engine = engine(project.path(), None);
+    let without = engine
+        .redact("SECRET-1234\n", Some("sample.env"), None, None, true)
+        .unwrap();
+    assert!(without.findings.is_empty());
+    let with = engine
+        .redact(
+            "invoice SECRET-1234\n",
+            Some("sample.env"),
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    assert_eq!(with.findings.len(), 1);
+    assert!(with.text.contains("[REDACTED:CONTEXT_DEMO:1]"));
+}
