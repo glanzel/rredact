@@ -59,7 +59,6 @@ const SKIP_DIRS: &[&str] = &[
 pub fn import_openredaction(
     source: &str,
     timeout: Duration,
-    include_all: bool,
 ) -> Result<(Vec<RuleConfig>, Vec<String>, String)> {
     let (data, origin, is_archive) = if source.starts_with("http://")
         || source.starts_with("https://")
@@ -90,7 +89,7 @@ pub fn import_openredaction(
             bail!("source not found: {}", path.display());
         }
         if path.is_dir() {
-            return collect_and_parse(&path, source, include_all)
+            return collect_and_parse(&path, source)
                 .map(|(rules, notes)| (rules, notes, path.display().to_string()));
         }
         let data = fs::read(&path).with_context(|| format!("cannot read {}", path.display()))?;
@@ -103,8 +102,8 @@ pub fn import_openredaction(
 
     if is_archive {
         let temp = tempfile::tempdir().context("cannot create temporary directory")?;
-        crate::openredact::extract_archive(&data, &origin, temp.path())?;
-        let (rules, notes) = collect_and_parse(temp.path(), &origin, include_all)?;
+        crate::import_common::extract_archive(&data, &origin, temp.path())?;
+        let (rules, notes) = collect_and_parse(temp.path(), &origin)?;
         return Ok((rules, notes, origin));
     }
 
@@ -113,11 +112,7 @@ pub fn import_openredaction(
     Ok((rules, notes, origin))
 }
 
-fn collect_and_parse(
-    root: &Path,
-    origin: &str,
-    include_all: bool,
-) -> Result<(Vec<RuleConfig>, Vec<String>)> {
+fn collect_and_parse(root: &Path, origin: &str) -> Result<(Vec<RuleConfig>, Vec<String>)> {
     let mut files = Vec::new();
     collect_ts_paths(root, root, &mut files)?;
     files.sort();
@@ -129,12 +124,6 @@ fn collect_and_parse(
     for file in files {
         let path_text = file.to_string_lossy();
         if has_patterns_dir && !path_text.contains("/patterns/") {
-            continue;
-        }
-        if !include_all
-            && (path_text.contains("/patterns/industries/")
-                || path_text.ends_with("/digital-identity.ts"))
-        {
             continue;
         }
         let text =
@@ -240,6 +229,8 @@ fn parse_typescript_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<
         } else {
             None
         };
+        let file_default_disabled =
+            origin.contains("/patterns/industries/") || origin.ends_with("/digital-identity.ts");
         let context_heavy_name = pattern_type.contains("NATIONAL_ID")
             || pattern_type.ends_with("_ID")
             || pattern_type.contains("DNI")
@@ -251,6 +242,7 @@ fn parse_typescript_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<
                 "CREDIT_CARD" | "IPV4" | "SSN" | "SIN_CA" | "ITIN" | "EIN" | "NHS_NUMBER"
             );
         let needs_context = DISABLE_TYPES.contains(&pattern_type)
+            || file_default_disabled
             || (context_heavy_name && is_numeric_only_pattern(&pattern))
             || (is_numeric_only_pattern(&pattern) && !safe_numeric);
         let mut tags = vec!["openredaction".into(), pattern_type.to_ascii_lowercase()];

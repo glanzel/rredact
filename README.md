@@ -19,7 +19,7 @@ geschickt werden.
 - **Schnell:** Regex-Vorfilter im Mikrosekundenbereich; der LLM-Aufruf bleibt
   der langsame Teil.
 - **Wenig Ressourcen:** kein NLP-Modell, kein Hintergrunddienst nur zum Tippen.
-- **Erweiterbar:** Gitleaks-TOML, eigenes YAML, OpenRedact-/OpenRedaction-Import und später
+- **Erweiterbar:** Gitleaks-TOML, eigenes YAML, OpenRedaction-Import und später
   ein OpenCode-Plugin.
 
 ## Installation
@@ -116,7 +116,7 @@ Regeln werden aus mehreren Quellen geladen:
 
 1. Core-Bundles: `secrets`, `env`
 2. Default-Sets aus `defaults/*.yaml`, `*.yml` oder `*.toml` – der Dateiname ist der Source-Name,
-   z. B. `defaults/openredact.yaml` → `openredact`. **Standardmäßig werden alle
+   z. B. `defaults/openredaction.yaml` → `openredaction`. **Standardmäßig werden alle
    Default-Sets geladen.**
 3. `.rredact.yaml` / `.rredact.toml` → `rules: [...]`
 4. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml` (hier schreibt auch ein LLM)
@@ -132,21 +132,21 @@ Lokal auswählen:
 # Default: Core + alle Default-Sets (sources einfach weglassen)
 builtin: [secrets, env]
 
-# Core + explizit OpenRedact und OpenRedaction
+# Core + OpenRedaction
 builtin: [secrets, env]
-sources: [openredact, openredaction]
+sources: [openredaction]
 
 # Nur Core, keine importierten Defaults
 builtin: [secrets, env]
 sources: []
 
-# Nur die importierten OpenRedact-/OpenRedaction-Regeln
+# Nur die importierten OpenRedaction-Regeln
 builtin: []
-sources: [openredact, openredaction]
+sources: [openredaction]
 ```
 
 `builtin` und `sources` sind additiv. Aus Kompatibilitätsgründen funktioniert
-auch noch `builtin: [secrets, env, openredact]`; neue Default-Dateien sollten
+auch noch `builtin: [secrets, env, openredaction]`; neue Default-Dateien sollten
 aber über `sources` ausgewählt werden.
 
 Beispiel für eine eigene YAML-Regel:
@@ -189,23 +189,21 @@ Das funktioniert auch für `KEY: value` (YAML), `"key": "value"` (JSON) und
 ## Importierte Defaults
 
 `defaults/` enthält ausschließlich **generierte Importe** von Plattformen. Diese
-Dateien werden nicht von Hand bearbeitet und nicht gemerged:
+Datei wird nicht von Hand bearbeitet und nicht gemerged:
 
-- `defaults/openredact.yaml` – OpenRedact/nerwhal (Regex-Recognizer)
-- `defaults/openredaction.yaml` – OpenRedaction (TypeScript-Patterns, deutlich
-  umfangreicher: u. a. Kontakt-, Finanz-, Behörden- und Personal-PII;
-  Branchen-Patterns optional mit `--all-patterns`)
+- `defaults/openredaction.yaml` – OpenRedaction (TypeScript-Patterns, 500+
+  Patterns: Kontakt-, Finanz-, Behörden-, Personal-, Branchen- und
+  Digital-Identity-PII)
 
 Der Workflow
 [.github/workflows/update-defaults.yml](.github/workflows/update-defaults.yml)
-aktualisiert beide Dateien wöchentlich und committet Änderungen. Jeder Import
+aktualisiert die Datei wöchentlich und committet Änderungen. Jeder Import
 überschreibt seine Zieldatei vollständig; es wird nichts aus lokalen Regeln
 hineingemischt.
 
 Manuell:
 
 ```bash
-rredact rules import-openredact --force
 rredact rules import-openredaction --force
 ```
 
@@ -218,19 +216,15 @@ rredact rules import-openredaction \
   --force
 ```
 
-Der OpenRedact-Importer liest Python-Recognizer, der
-OpenRedaction-Importer liest TypeScript-Pattern-Objekte. Nicht unterstützte
-Regex-Konstrukte werden mit Hinweis übersprungen.
-
-Standardmäßig importiert OpenRedaction die Kern-Patterns. Mit
-`--all-patterns` kommen zusätzlich Branchen- und Digital-Identity-Patterns
-dazu (deutlich mehr Regeln, viele davon kontextabhängig deaktiviert).
+Der Importer liest die TypeScript-Pattern-Objekte. Nicht unterstützte
+Regex-Konstrukte werden mit Hinweis übersprungen. Es werden **alle** Patterns
+importiert, die OpenRedaction anbietet.
 
 Breite, kontextabhängige OpenRedaction-Patterns (z. B. `NAME`, `USERNAME`,
-nationale IDs) werden zwar importiert, aber standardmäßig **deaktiviert** und
-mit `needs-context` getaggt. Ihre JS-Validatoren können wir nicht ausführen;
-ohne diese Validatoren würden sie zu viele False Positives erzeugen. Gezielt
-aktivieren:
+nationale IDs, Nummern-IDs) werden zwar importiert, aber standardmäßig
+**deaktiviert** und mit `needs-context` getaggt. Ihre JS-Validatoren können wir
+nicht ausführen; ohne diese Validatoren würden sie zu viele False Positives
+erzeugen. Gezielt aktivieren:
 
 ```yaml
 enable_rules:
@@ -320,5 +314,5 @@ cargo test
 
 ## Lizenz
 
-MIT. Die OpenRedact-/nerwhal-Regeln stehen ebenfalls unter MIT; siehe
+MIT. Die OpenRedaction-Regeln stehen ebenfalls unter MIT; siehe
 [NOTICE](NOTICE).

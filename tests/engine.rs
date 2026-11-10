@@ -188,7 +188,7 @@ fn validators_reject_false_positives() {
     let phones: Vec<_> = result
         .findings
         .iter()
-        .filter(|finding| finding.rule_id == "openredact-phone")
+        .filter(|finding| finding.rule_id.contains("phone"))
         .collect();
     assert_eq!(phones.len(), 1);
 }
@@ -265,7 +265,7 @@ fn toml_project_config_is_found() {
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
     assert!(ids.contains(&"github-token"));
-    assert!(!ids.contains(&"openredact-email"));
+    assert!(!ids.contains(&"openredaction-email"));
 }
 
 #[test]
@@ -285,9 +285,9 @@ fn default_sources_are_loaded_by_default() {
     let project = tempfile::tempdir().unwrap();
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
-    assert!(ids.contains(&"openredact-email"));
+    assert!(ids.contains(&"openredaction-email"));
     assert!(ids.contains(&"sensitive-variable-assignment"));
-    assert!(rredact::config::default_source_names().contains(&"openredact".to_string()));
+    assert!(rredact::config::default_source_names().contains(&"openredaction".to_string()));
 }
 
 #[test]
@@ -296,24 +296,24 @@ fn core_builtin_selection_excludes_sources() {
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
     assert!(ids.contains(&"github-token"));
-    assert!(!ids.contains(&"openredact-email"));
+    assert!(!ids.contains(&"openredaction-email"));
 }
 
 #[test]
 fn sources_can_be_selected_explicitly() {
-    let project = project_with_config(Some("builtin: [secrets, env]\nsources: [openredact]\n"));
+    let project = project_with_config(Some("builtin: [secrets, env]\nsources: [openredaction]\n"));
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
     assert!(ids.contains(&"github-token"));
-    assert!(ids.contains(&"openredact-email"));
+    assert!(ids.contains(&"openredaction-email"));
 }
 
 #[test]
 fn source_only_selection_is_possible() {
-    let project = project_with_config(Some("builtin: [openredact]\n"));
+    let project = project_with_config(Some("builtin: [openredaction]\n"));
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
-    assert!(ids.contains(&"openredact-email"));
+    assert!(ids.contains(&"openredaction-email"));
     assert!(!ids.contains(&"github-token"));
 }
 

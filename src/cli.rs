@@ -14,9 +14,9 @@ use serde_json::json;
 use crate::api::{self, AppState};
 use crate::config::{load_config, parse_rule_file, Config};
 use crate::engine::Engine;
+use crate::import_common::write_rules_yaml;
 use crate::mapping::MappingStore;
 use crate::models::{should_fail, FailOn, Finding, Mode, VERSION};
-use crate::openredact::{import_openredact, write_rules_yaml};
 use crate::report::{
     filter_baseline, format_text, load_baseline, save_baseline, to_json, to_sarif, write_report,
 };
@@ -28,8 +28,8 @@ const INIT_CONFIG: &str = r#"version: 1
 # Core bundles: secrets, env (variable-name heuristics)
 builtin: [secrets, env]
 # Imported default sets from defaults/*.yaml, *.yml or *.toml. If omitted, all are loaded.
-# sources: [openredact, openredaction]
-# disable_rules: [openredact-phone]
+# sources: [openredaction]
+# disable_rules: [openredaction-name]
 # enable_rules: [openredaction-name, high-entropy-token]
 # enable_context_rules: true
 
@@ -225,7 +225,6 @@ enum RulesCommand {
         common: Common,
         files: Vec<PathBuf>,
     },
-    ImportOpenredact(ImportArgs),
     ImportOpenredaction(ImportArgs),
 }
 
@@ -247,8 +246,6 @@ struct ImportArgs {
     force: bool,
     #[arg(long)]
     dry_run: bool,
-    #[arg(long)]
-    all_patterns: bool,
     #[arg(long, default_value_t = 30)]
     timeout: u64,
 }
@@ -321,10 +318,7 @@ fn dispatch(command: Command) -> Result<i32> {
         Command::Rules(args) => match args.command {
             RulesCommand::List { common, format } => cmd_rules_list(common, format),
             RulesCommand::Validate { common, files } => cmd_rules_validate(common, files),
-            RulesCommand::ImportOpenredact(args) => cmd_rules_import(args, ImportKind::OpenRedact),
-            RulesCommand::ImportOpenredaction(args) => {
-                cmd_rules_import(args, ImportKind::OpenRedaction)
-            }
+            RulesCommand::ImportOpenredaction(args) => cmd_rules_import(args),
         },
         Command::Variables(args) => cmd_variables(args),
         Command::Serve(args) => cmd_serve(args),
@@ -797,45 +791,12 @@ fn cmd_rules_validate(common: Common, files: Vec<PathBuf>) -> Result<i32> {
     Ok(if failed { 1 } else { 0 })
 }
 
-#[derive(Debug, Clone, Copy)]
-enum ImportKind {
-    OpenRedact,
-    OpenRedaction,
-}
-
-impl ImportKind {
-    fn default_source(self) -> &'static str {
-        match self {
-            Self::OpenRedact => {
-                "https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz"
-            }
-            Self::OpenRedaction => {
-                "https://github.com/sam247/openredaction/archive/refs/heads/main.tar.gz"
-            }
-        }
-    }
-
-    fn default_output(self) -> &'static str {
-        match self {
-            Self::OpenRedact => "defaults/openredact.yaml",
-            Self::OpenRedaction => "defaults/openredaction.yaml",
-        }
-    }
-}
-
-fn cmd_rules_import(args: ImportArgs, kind: ImportKind) -> Result<i32> {
-    let source = args
-        .source
-        .clone()
-        .unwrap_or_else(|| kind.default_source().to_string());
-    let (mut rules, notes, origin) = match kind {
-        ImportKind::OpenRedact => import_openredact(&source, Duration::from_secs(args.timeout))?,
-        ImportKind::OpenRedaction => crate::openredaction::import_openredaction(
-            &source,
-            Duration::from_secs(args.timeout),
-            args.all_patterns,
-        )?,
-    };
+fn cmd_rules_import(args: ImportArgs) -> Result<i32> {
+    let source = args.source.clone().unwrap_or_else(|| {
+        "https://github.com/sam247/openredaction/archive/refs/heads/main.tar.gz".to_string()
+    });
+    let (mut rules, notes, origin) =
+        crate::openredaction::import_openredaction(&source, Duration::from_secs(args.timeout))?;
     if let Some(prefix) = args
         .prefix
         .as_deref()
@@ -855,7 +816,7 @@ fn cmd_rules_import(args: ImportArgs, kind: ImportKind) -> Result<i32> {
     let output = args
         .output
         .clone()
-        .unwrap_or_else(|| PathBuf::from(kind.default_output()));
+        .unwrap_or_else(|| PathBuf::from("defaults/openredaction.yaml"));
     let output = if output.is_absolute() {
         output
     } else {
