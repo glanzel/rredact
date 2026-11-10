@@ -1,4 +1,4 @@
-name: update-openredact-defaults
+name: update-defaults
 
 on:
   schedule:
@@ -19,22 +19,30 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release
-      - name: Import/merge OpenRedact defaults
+      - name: Import OpenRedact defaults
         run: |
           ./target/release/rredact rules import-openredact \
             --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
             --output defaults/openredact.yaml \
-            --merge --force
+            --force
+      - name: Import OpenRedaction defaults
+        run: |
+          ./target/release/rredact rules import-openredaction \
+            --source https://github.com/sam247/openredaction/archive/refs/heads/main.tar.gz \
+            --output defaults/openredaction.yaml \
+            --force
       - name: Validate defaults
-        run: ./target/release/rredact rules validate defaults/openredact.yaml
+        run: |
+          ./target/release/rredact rules validate defaults/openredact.yaml
+          ./target/release/rredact rules validate defaults/openredaction.yaml
       - name: Commit changed defaults
         run: |
-          if git diff --quiet -- defaults/openredact.yaml; then
-            echo "OpenRedact defaults are already current."
+          if git diff --quiet -- defaults/; then
+            echo "Imported defaults are already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add defaults/openredact.yaml
-          git commit -m "Update OpenRedact defaults"
+          git add defaults/
+          git commit -m "Update imported platform defaults"
           git push

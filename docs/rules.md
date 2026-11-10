@@ -205,17 +205,17 @@ Lokal auswählen:
 # Default: Core + alle Default-Sets
 builtin: [secrets, env]
 
-# Nur OpenRedact
+# Nur die importierten OpenRedact-/OpenRedaction-Regeln
 builtin: []
-sources: [openredact]
+sources: [openredact, openredaction]
 
 # Ohne importierte Default-Sets
 builtin: [secrets, env]
 sources: []
 
-# Core + OpenRedact
+# Core + OpenRedact/OpenRedaction
 builtin: [secrets, env]
-sources: [openredact]
+sources: [openredact, openredaction]
 ```
 
 Aus Kompatibilitätsgründen kann ein Source-Name auch in `builtin` stehen:
@@ -232,23 +232,42 @@ Standardmäßig deaktivierte Regeln wieder aktivieren:
 
 ```yaml
 enable_rules:
-  - openredact-date
+  - openredaction-name
+
+# Oder alle kontextabhängigen Regeln auf einmal:
+enable_context_rules: true
   - high-entropy-token
 ```
 
-Weitere Tools: einfach `defaults/<tool>.yaml` anlegen; die Datei wird
-standardmäßig geladen und ist über `sources: [<tool>]` auswählbar.
+Weitere Tools: einfach `defaults/<tool>.yaml` (oder `.yml`/`.toml`) ablegen;
+die Datei wird standardmäßig geladen und ist über `sources: [<tool>]`
+auswählbar.
 
-Die OpenRedact-Defaults werden durch
-`.github/workflows/update-openredact-defaults.yml` wöchentlich aktualisiert.
-Der Import nutzt `--merge`, damit kuratierte Zusatzregeln erhalten bleiben:
+`defaults/` ist ausschließlich für **generierte Importe** gedacht:
+
+- `defaults/openredact.yaml` – OpenRedact/nerwhal
+- `defaults/openredaction.yaml` – OpenRedaction
+
+Der Workflow `.github/workflows/update-defaults.yml` aktualisiert beide
+wöchentlich. Importe überschreiben ihre Zieldatei vollständig; es wird nichts
+gemerged.
 
 ```bash
-rredact rules import-openredact \
-  --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
-  --output defaults/openredact.yaml \
-  --merge --force
+rredact rules import-openredact --force
+rredact rules import-openredaction --force
 ```
+
+Eigene Regeln gehören in getrennte Dateien:
+
+- `.rredact/rules.d/user.yaml` – manuell gepflegt
+- `.rredact/rules.d/llm.yaml` – vom LLM erzeugt
+
+Breite, kontextabhängige OpenRedaction-Patterns werden importiert, aber
+standardmäßig deaktiviert (`needs-context`). Sie lassen sich per
+`enable_rules` gezielt aktivieren.
+
+Mit `rredact rules import-openredaction --all-patterns --force` lassen sich
+zusätzlich die Branchen- und Digital-Identity-Patterns importieren.
 
 ## Regeln von einem LLM schreiben lassen
 

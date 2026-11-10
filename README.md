@@ -19,7 +19,7 @@ geschickt werden.
 - **Schnell:** Regex-Vorfilter im Mikrosekundenbereich; der LLM-Aufruf bleibt
   der langsame Teil.
 - **Wenig Ressourcen:** kein NLP-Modell, kein Hintergrunddienst nur zum Tippen.
-- **Erweiterbar:** Gitleaks-TOML, eigenes YAML, OpenRedact-Import und später
+- **Erweiterbar:** Gitleaks-TOML, eigenes YAML, OpenRedact-/OpenRedaction-Import und später
   ein OpenCode-Plugin.
 
 ## Installation
@@ -38,8 +38,8 @@ Im Projekt initialisieren:
 rredact init
 ```
 
-Das erzeugt `.rredact.yaml`, `.rredact/rules.d/llm.yaml` und passende
-`.gitignore`-Einträge.
+Das erzeugt `.rredact.yaml`, `.rredact/rules.d/user.yaml`,
+`.rredact/rules.d/llm.yaml` und passende `.gitignore`-Einträge.
 
 ## Schnellstart
 
@@ -122,23 +122,27 @@ Regeln werden aus mehreren Quellen geladen:
 4. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml` (hier schreibt auch ein LLM)
 5. `--rules DATEI` und `RREDACT_RULES`
 
+`defaults/` ist ausschließlich für generierte Importe gedacht. Eigene Regeln
+gehören in `.rredact/rules.d/user.yaml`, LLM-Regeln in
+`.rredact/rules.d/llm.yaml`.
+
 Lokal auswählen:
 
 ```yaml
 # Default: Core + alle Default-Sets (sources einfach weglassen)
 builtin: [secrets, env]
 
-# Core + explizit OpenRedact
+# Core + explizit OpenRedact und OpenRedaction
 builtin: [secrets, env]
-sources: [openredact]
+sources: [openredact, openredaction]
 
 # Nur Core, keine importierten Defaults
 builtin: [secrets, env]
 sources: []
 
-# Nur OpenRedact
+# Nur die importierten OpenRedact-/OpenRedaction-Regeln
 builtin: []
-sources: [openredact]
+sources: [openredact, openredaction]
 ```
 
 `builtin` und `sources` sind additiv. Aus Kompatibilitätsgründen funktioniert
@@ -182,44 +186,68 @@ AUTH_TYPE=oauth                  # bleibt
 Das funktioniert auch für `KEY: value` (YAML), `"key": "value"` (JSON) und
 `key = value` (TOML). Kommentare und Anführungszeichen bleiben erhalten.
 
-## OpenRedact
+## Importierte Defaults
 
-Die PII-Defaults liegen in `defaults/openredact.yaml` und sind aus den
-OpenRedact-/nerwhal-Recognizern abgeleitet (MIT-Lizenz, siehe
-[NOTICE](NOTICE)). Enthalten sind u. a. E-Mail, Telefon, IBAN
-(MOD-97-geprüft) und Kreditkarte (Luhn-geprüft). Datum und Adresse sind
-standardmäßig deaktiviert, weil sie in Quellcode oft Rauschen erzeugen.
+`defaults/` enthält ausschließlich **generierte Importe** von Plattformen. Diese
+Dateien werden nicht von Hand bearbeitet und nicht gemerged:
+
+- `defaults/openredact.yaml` – OpenRedact/nerwhal (Regex-Recognizer)
+- `defaults/openredaction.yaml` – OpenRedaction (TypeScript-Patterns, deutlich
+  umfangreicher: u. a. Kontakt-, Finanz-, Behörden- und Personal-PII;
+  Branchen-Patterns optional mit `--all-patterns`)
 
 Der Workflow
-[.github/workflows/update-openredact-defaults.yml](.github/workflows/update-openredact-defaults.yml)
-aktualisiert dieses Default-Set wöchentlich per CI und committet Änderungen.
-Der Import läuft mit `--merge`: aktualisierte OpenRedact-Regeln werden
-übernommen, kuratierte Zusatzregeln (IBAN, Kreditkarte, Datum, Adresse) bleiben
-erhalten.
+[.github/workflows/update-defaults.yml](.github/workflows/update-defaults.yml)
+aktualisiert beide Dateien wöchentlich und committet Änderungen. Jeder Import
+überschreibt seine Zieldatei vollständig; es wird nichts aus lokalen Regeln
+hineingemischt.
 
 Manuell:
 
 ```bash
-# Default-Set aktualisieren, ohne kuratierte Zusatzregeln zu verlieren
-rredact rules import-openredact \
-  --source https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz \
-  --output defaults/openredact.yaml \
-  --merge --force
-
-# Andere Quelle in ein eigenes Default-Set schreiben
-rredact rules import-openredact \
-  --source ./nerwhal/integrated_recognizers/email_recognizer.py \
-  --output defaults/my-openredact.yaml \
-  --prefix my-openredact
+rredact rules import-openredact --force
+rredact rules import-openredaction --force
 ```
 
-Der Importer liest die Python-Klassen mit einem kleinen, nicht ausführenden
-Extraktor. `regexp`-Recognizer werden übernommen; spaCy-`patterns`-Recognizer
-werden mit einem Hinweis übersprungen.
+Optional mit eigener Quelle/Zieldatei:
 
-Weitere Tools können einfach eine Datei `defaults/<tool>.yaml` ablegen. Sie
-wird standardmäßig mitgeladen und kann über `sources: [<tool>]` ausgewählt
-werden.
+```bash
+rredact rules import-openredaction \
+  --source ./openredaction \
+  --output defaults/openredaction.yaml \
+  --force
+```
+
+Der OpenRedact-Importer liest Python-Recognizer, der
+OpenRedaction-Importer liest TypeScript-Pattern-Objekte. Nicht unterstützte
+Regex-Konstrukte werden mit Hinweis übersprungen.
+
+Standardmäßig importiert OpenRedaction die Kern-Patterns. Mit
+`--all-patterns` kommen zusätzlich Branchen- und Digital-Identity-Patterns
+dazu (deutlich mehr Regeln, viele davon kontextabhängig deaktiviert).
+
+Breite, kontextabhängige OpenRedaction-Patterns (z. B. `NAME`, `USERNAME`,
+nationale IDs) werden zwar importiert, aber standardmäßig **deaktiviert** und
+mit `needs-context` getaggt. Ihre JS-Validatoren können wir nicht ausführen;
+ohne diese Validatoren würden sie zu viele False Positives erzeugen. Gezielt
+aktivieren:
+
+```yaml
+enable_rules:
+  - openredaction-name
+
+# Oder alle als "needs-context" markierten Regeln auf einmal:
+enable_context_rules: true
+```
+
+### Getrennte Dateien für Import, Handarbeit und LLM
+
+- `defaults/*` → **nur Importe**, generiert, nicht bearbeiten.
+- `.rredact/rules.d/user.yaml` → **manuell** gepflegte Projektregeln.
+- `.rredact/rules.d/llm.yaml` → Regeln, die ein **LLM** erzeugt.
+
+`rredact init` legt `user.yaml` und `llm.yaml` getrennt an. Beide werden
+automatisch geladen.
 
 ## API für ein externes LLM
 

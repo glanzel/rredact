@@ -270,12 +270,12 @@ fn toml_project_config_is_found() {
 
 #[test]
 fn enable_rules_activates_disabled_builtin() {
-    let project = project_with_config(Some("enable_rules: [openredact-date]\n"));
+    let project = project_with_config(Some("enable_rules: [openredaction-name]\n"));
     let config = load_config(None, &[], Some(project.path())).unwrap();
     let rule = config
         .rules
         .iter()
-        .find(|rule| rule.id == "openredact-date")
+        .find(|rule| rule.id == "openredaction-name")
         .unwrap();
     assert!(rule.enabled);
 }
@@ -315,4 +315,16 @@ fn source_only_selection_is_possible() {
     let ids: Vec<&str> = config.rules.iter().map(|rule| rule.id.as_str()).collect();
     assert!(ids.contains(&"openredact-email"));
     assert!(!ids.contains(&"github-token"));
+}
+
+#[test]
+fn context_rules_can_be_enabled_as_a_group() {
+    let project = project_with_config(Some("enable_context_rules: true\n"));
+    let config = load_config(None, &[], Some(project.path())).unwrap();
+    let rule = config
+        .rules
+        .iter()
+        .find(|rule| rule.id == "openredaction-name")
+        .unwrap();
+    assert!(rule.enabled);
 }

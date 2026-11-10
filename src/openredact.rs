@@ -238,13 +238,19 @@ fn parse_python_source(source: &str, origin: &str) -> (Vec<RuleConfig>, Vec<Stri
             flags: flags.map(crate::rules::FlagsValue::String),
             group: group.map(GroupValue::Index),
             strip_quotes: false,
-            placeholder: Some(tag),
+            placeholder: Some(tag.clone()),
             priority: 80,
             enabled: true,
             paths: Vec::new(),
             exclude_paths: Vec::new(),
             tags: vec!["openredact".into(), class_name.to_ascii_lowercase()],
-            validate: None,
+            validate: if tag == "PHONE" {
+                Some("phone".to_string())
+            } else if tag == "EMAIL" {
+                Some("email".to_string())
+            } else {
+                None
+            },
             name_pattern: None,
             name_match: "search".into(),
             allow_keys: Vec::new(),
@@ -489,7 +495,7 @@ fn first_doc_line(block: &[&str]) -> Option<String> {
     (!first.is_empty()).then(|| first.to_string())
 }
 
-fn extract_archive(data: &[u8], origin: &str, root: &Path) -> Result<()> {
+pub(crate) fn extract_archive(data: &[u8], origin: &str, root: &Path) -> Result<()> {
     if data.starts_with(b"PK") {
         let mut archive = zip::ZipArchive::new(Cursor::new(data))
             .with_context(|| format!("{origin}: invalid ZIP archive"))?;
@@ -535,7 +541,7 @@ pub fn write_rules_yaml(
         metadata: json!({
             "source": source,
             "license": "MIT",
-            "generator": "rredact rules import-openredact",
+            "generator": "rredact rules import",
         }),
         rules: rules.to_vec(),
     };

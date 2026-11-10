@@ -48,6 +48,8 @@ pub enum Validator {
     Iban,
     Phone,
     BasicAuth,
+    Ipv4,
+    Email,
 }
 
 impl Validator {
@@ -57,6 +59,8 @@ impl Validator {
             "iban" => Ok(Self::Iban),
             "phone" => Ok(Self::Phone),
             "basic_auth" => Ok(Self::BasicAuth),
+            "ipv4" => Ok(Self::Ipv4),
+            "email" => Ok(Self::Email),
             other => bail!("unknown validator {other:?}"),
         }
     }
@@ -67,6 +71,8 @@ impl Validator {
             Self::Iban => validate_iban(value),
             Self::Phone => validate_phone(value),
             Self::BasicAuth => validate_basic_auth(value),
+            Self::Ipv4 => validate_ipv4(value),
+            Self::Email => validate_email(value),
         }
     }
 }
@@ -922,6 +928,47 @@ fn phone_false_positive_regexes() -> &'static [Regex] {
             Regex::new(r"\b\d{4}[ -]\d{4}[ -]\d{4}\b").unwrap(),
         ]
     })
+}
+
+pub fn validate_email(value: &str) -> bool {
+    let mut parts = value.split('@');
+    let Some(local) = parts.next() else {
+        return false;
+    };
+    let Some(domain) = parts.next() else {
+        return false;
+    };
+    if parts.next().is_some() || local.is_empty() || domain.is_empty() {
+        return false;
+    }
+    if local.contains(['/', '\\', ' ']) || domain.contains(['/', '\\', ' ']) {
+        return false;
+    }
+    let Some((_, tld)) = domain.rsplit_once('.') else {
+        return false;
+    };
+    tld.len() >= 2 && tld.chars().all(|ch| ch.is_ascii_alphabetic())
+}
+
+pub fn validate_ipv4(value: &str) -> bool {
+    let parts: Vec<&str> = value.trim().split('.').collect();
+    if parts.len() != 4 {
+        return false;
+    }
+    let mut octets = [0u8; 4];
+    for (index, part) in parts.iter().enumerate() {
+        let Ok(octet) = part.parse::<u8>() else {
+            return false;
+        };
+        octets[index] = octet;
+    }
+    !(octets[0] == 0
+        || octets[0] == 10
+        || octets[0] == 127
+        || (octets[0] == 169 && octets[1] == 254)
+        || (octets[0] == 172 && (16..=31).contains(&octets[1]))
+        || (octets[0] == 192 && octets[1] == 168)
+        || (octets[0] == 255 && octets[1] == 255 && octets[2] == 255 && octets[3] == 255))
 }
 
 pub fn validate_basic_auth(value: &str) -> bool {

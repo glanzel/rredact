@@ -7,9 +7,10 @@ version: 1
 # Core bundles.
 builtin: [secrets, env]
 # Imported defaults from defaults/*.yaml, *.yml or *.toml. Omit to load all.
-# sources: [openredact]
+# sources: [openredact, openredaction]
 # disable_rules: [openredact-phone]
-# enable_rules: [openredact-date, high-entropy-token]
+# enable_rules: [openredaction-name, high-entropy-token]
+# enable_context_rules: true
 
 rule_files:
   - ".rredact/rules.d/*.yaml"

@@ -5,6 +5,7 @@ pub mod engine;
 pub mod mapping;
 pub mod models;
 pub mod openredact;
+pub mod openredaction;
 pub mod report;
 pub mod rules;
 pub mod scanner;

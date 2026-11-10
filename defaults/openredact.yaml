@@ -1,77 +1,27 @@
 version: 1
 metadata:
-  generator: rredact rules import-openredact
+  generator: rredact rules import
   license: MIT
   source: https://github.com/openredact/nerwhal/archive/refs/heads/develop.tar.gz
 rules:
-- id: openredact-address
-  description: German street address (enable for document redaction)
+- id: openredact-phone
+  description: Recognize phone numbers that follow several common German national and international patterns.
   category: pii
-  severity: low
+  severity: medium
   type: regex
-  pattern: \b[A-ZÄÖÜ][a-zäöüß.-]+(?:straße|str\.|weg|platz|allee|gasse)\s+\d+[a-zA-Z]?\b
-  flags: i
-  group: null
-  strip_quotes: false
-  placeholder: ADDRESS
-  priority: 80
-  enabled: false
-  paths: []
-  exclude_paths: []
-  tags:
-  - openredact
-  - address
-  validate: null
-  name_pattern: null
-  name_match: search
-  allow_keys: []
-  bare_values: auto
-  min_length: 32
-  min_entropy: 4.0
-  charset: base64
-- id: openredact-credit-card
-  description: Payment card number (validated with Luhn)
-  category: pii
-  severity: high
-  type: regex
-  pattern: \b(?:\d[\x20-]?){13,19}\b
+  pattern: (?:^|^[^\.\d]|[^\d][^\.\d])((\(?(\+|00)\)?\d{1,3}[ \.\-]?)?(\(?0\)?[ ]?\d{1,4}|\(?\d{1,5}\)?)([ -]|([ ]?\/[ ]?))?\d{1,4}[ -]?\d{1,4}[ -]?\d{1,2}([ ]?-[ ]?\d{1,3}|[ ]\d{0,3}[ ]?\/[ ]?\d{1,3})?)(?:$|[^\d]$|[^\d][^\d])
   flags: null
-  group: null
+  group: 1
   strip_quotes: false
-  placeholder: CREDIT_CARD
-  priority: 70
+  placeholder: PHONE
+  priority: 80
   enabled: true
   paths: []
   exclude_paths: []
   tags:
   - openredact
-  - finance
-  validate: luhn
-  name_pattern: null
-  name_match: search
-  allow_keys: []
-  bare_values: auto
-  min_length: 32
-  min_entropy: 4.0
-  charset: base64
-- id: openredact-date
-  description: German/ISO date (enable for document redaction)
-  category: pii
-  severity: low
-  type: regex
-  pattern: \b(?:(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\.(?:[12][0-9]{3}|[0-9]{2})|[12][0-9]{3}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])|(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag),?\s+(?:0?[1-9]|[12][0-9]|3[01])\.\s*(?:Jan|Feb|Mrz|Mär|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)[a-z]*\.?\s+[0-9]{2,4})\b
-  flags: null
-  group: null
-  strip_quotes: false
-  placeholder: DATE
-  priority: 80
-  enabled: false
-  paths: []
-  exclude_paths: []
-  tags:
-  - openredact
-  - date
-  validate: null
+  - phonenumberrecognizer
+  validate: phone
   name_pattern: null
   name_match: search
   allow_keys: []
@@ -96,59 +46,7 @@ rules:
   tags:
   - openredact
   - emailrecognizer
-  - email
-  validate: null
-  name_pattern: null
-  name_match: search
-  allow_keys: []
-  bare_values: auto
-  min_length: 32
-  min_entropy: 4.0
-  charset: base64
-- id: openredact-iban
-  description: IBAN (validated with MOD-97)
-  category: pii
-  severity: high
-  type: regex
-  pattern: \b[A-Z]{2}\d{2}(?:\x20?[A-Z0-9]{4}){2,7}(?:\x20?[A-Z0-9]{1,4})?\b
-  flags: null
-  group: null
-  strip_quotes: false
-  placeholder: IBAN
-  priority: 70
-  enabled: true
-  paths: []
-  exclude_paths: []
-  tags:
-  - openredact
-  - finance
-  validate: iban
-  name_pattern: null
-  name_match: search
-  allow_keys: []
-  bare_values: auto
-  min_length: 32
-  min_entropy: 4.0
-  charset: base64
-- id: openredact-phone
-  description: Recognize phone numbers that follow several common German national and international patterns.
-  category: pii
-  severity: medium
-  type: regex
-  pattern: (?:^|^[^\.\d]|[^\d][^\.\d])((\(?(\+|00)\)?\d{1,3}[ \.\-]?)?(\(?0\)?[ ]?\d{1,4}|\(?\d{1,5}\)?)([ -]|([ ]?\/[ ]?))?\d{1,4}[ -]?\d{1,4}[ -]?\d{1,2}([ ]?-[ ]?\d{1,3}|[ ]\d{0,3}[ ]?\/[ ]?\d{1,3})?)(?:$|[^\d]$|[^\d][^\d])
-  flags: null
-  group: 1
-  strip_quotes: false
-  placeholder: PHONE
-  priority: 80
-  enabled: true
-  paths: []
-  exclude_paths: []
-  tags:
-  - openredact
-  - phonenumberrecognizer
-  - phone
-  validate: phone
+  validate: email
   name_pattern: null
   name_match: search
   allow_keys: []

@@ -130,6 +130,8 @@ struct UserConfig {
     #[serde(default)]
     enable_rules: Vec<String>,
     #[serde(default)]
+    enable_context_rules: Option<bool>,
+    #[serde(default)]
     rules: Vec<RuleConfig>,
     #[serde(default)]
     rule_files: Option<Vec<String>>,
@@ -410,6 +412,13 @@ pub fn load_config(
     for rule in &mut compiled {
         if enabled.contains(&rule.id) {
             rule.enabled = true;
+        }
+    }
+    if user.enable_context_rules.unwrap_or(false) {
+        for rule in &mut compiled {
+            if rule.tags.iter().any(|tag| tag == "needs-context") {
+                rule.enabled = true;
+            }
         }
     }
 

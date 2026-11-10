@@ -1,11 +1,16 @@
-rredact includes PII regex rules adapted from OpenRedact / nerwhal:
+rredact includes PII regex rules adapted from OpenRedact / nerwhal and OpenRedaction:
 
   https://github.com/openredact/nerwhal
   https://gitlab.opencode.de/bmbf/datenlabor/openredact
 
-OpenRedact and nerwhal are distributed under the MIT License. The adapted
-rules are in defaults/openredact.yaml and cover email addresses,
-German/international phone numbers, dates, addresses, IBANs and payment card
-numbers. The statistical NER components are not included.
+OpenRedact and nerwhal are distributed under the MIT License. Imported
+OpenRedact regex rules are in defaults/openredact.yaml.
+
+OpenRedaction is distributed under the MIT License. Imported OpenRedaction
+patterns are in defaults/openredaction.yaml and cover a much broader PII set.
+The statistical NER components of OpenRedact are not included.
+
+OpenRedaction: https://github.com/sam247/openredaction (MIT License).
 
 OpenRedact copyright: the OpenRedact / nerwhal contributors.
+OpenRedaction copyright: the OpenRedaction contributors.

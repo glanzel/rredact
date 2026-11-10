@@ -40,6 +40,7 @@ fn init_scan_and_json_report() {
     let init = run(project.path(), &["init"], None);
     assert!(init.status.success(), "{}", stderr(&init));
     assert!(project.path().join(".rredact.yaml").exists());
+    assert!(project.path().join(".rredact/rules.d/user.yaml").exists());
     fs::write(
         project.path().join("app.env"),
         format!(
@@ -206,44 +207,55 @@ secretGroup = 2
 }
 
 #[test]
-fn import_merge_preserves_existing_rules() {
+fn import_openredaction_overwrites_import_file() {
     let project = tempfile::tempdir().unwrap();
-    let rules_dir = project.path().join(".rredact/rules.d");
-    fs::create_dir_all(&rules_dir).unwrap();
-    let output = rules_dir.join("openredact.yaml");
+    let output = project.path().join("openredaction.yaml");
     fs::write(
         &output,
-        "version: 1\nrules:\n  - id: custom-keep\n    description: Keep me\n    category: pii\n    severity: low\n    pattern: 'CUSTOM-[0-9]+'\n  - id: openredact-email\n    description: Old email rule\n    category: pii\n    severity: medium\n    pattern: 'old-email-pattern'\n  - id: openredact-phone\n    description: Old phone rule\n    category: pii\n    severity: medium\n    pattern: 'old-phone-pattern'\n    validate: phone\n",
+        "version: 1\nrules:\n  - id: custom-keep\n    description: Keep me\n    category: pii\n    severity: low\n    pattern: 'CUSTOM-[0-9]+'\n",
     )
     .unwrap();
-    let source = project.path().join("recognizer.py");
+    let source = project.path().join("patterns.ts");
     fs::write(
         &source,
-        "class EmailRecognizer:\n    \"\"\"Email\"\"\"\n    TAG = \"EMAIL\"\n    SCORE = 0.9\n    @property\n    def regexp(self):\n        return r\"[a-z]+@[a-z]+\\.[a-z]+\"\n\nclass PhoneRecognizer:\n    \"\"\"Phone\"\"\"\n    TAG = \"PHONE\"\n    SCORE = 0.8\n    GROUP = 1\n    @property\n    def regexp(self):\n        return r\"(\\d{7,})\"\n",
+        r#"export const patterns = [
+  {
+    type: "EMAIL",
+    regex: /\b[a-z]+@[a-z]+\.[a-z]+\b/gi,
+    priority: 100,
+    description: "Email address",
+    severity: "high",
+  },
+  {
+    type: "CREDIT_CARD",
+    regex: /(?<!\d)(?:\d{4}[ -]?){3}\d{4}(?!\d)/g,
+    priority: 100,
+    description: "Credit card number",
+    severity: "high",
+  },
+];
+"#,
     )
     .unwrap();
     let result = run(
         project.path(),
         &[
             "rules",
-            "import-openredact",
+            "import-openredaction",
             "--source",
             source.to_str().unwrap(),
             "--output",
             output.to_str().unwrap(),
-            "--merge",
             "--force",
         ],
         None,
     );
     assert!(result.status.success(), "{}", stderr(&result));
     let text = fs::read_to_string(&output).unwrap();
-    assert!(text.contains("custom-keep"));
-    assert!(text.contains("openredact-email"));
-    assert!(text.contains("[a-z]+@[a-z]+"));
-    assert!(text.contains("validate: phone"));
-    assert!(!text.contains("old-email-pattern"));
-    assert!(!text.contains("old-phone-pattern"));
+    assert!(text.contains("openredaction-email"));
+    assert!(text.contains("openredaction-credit-card"));
+    assert!(text.contains("validate: luhn"));
+    assert!(!text.contains("custom-keep"));
     let validate = run(
         project.path(),
         &["rules", "validate", output.to_str().unwrap()],
