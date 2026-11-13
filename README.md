@@ -1,66 +1,83 @@
 # rredact
 
-`rredact` entfernt Secrets und personenbezogene Daten aus Text, bevor er an ein
-LLM oder eine externe API geht – und kann die Platzhalter danach wieder
-zurücksetzen. Es ist eine einzelne, schnelle Rust-Binärdatei mit CLI, lokaler
-HTTP-API und Bibliothek.
+`rredact` redacts secrets and personally identifiable information (PII) from
+text before it is sent to an LLM or an external API — and restores the
+placeholders afterwards. It is a single, fast Rust binary with a CLI, a local
+HTTP API and a library interface.
 
-```
+```text
 PASSWORD=hunter2  ->  PASSWORD=[REDACTED:ENV_SECRET:1]
 ```
 
-Der Platzhalter ist umkehrbar, solange die Mapping-Datei vorhanden ist. Diese
-Datei enthält die Originalwerte und darf **niemals** committet oder an ein LLM
-geschickt werden.
+Placeholders are reversible as long as the local mapping file exists. That file
+contains the original values and must **never** be committed or sent to an LLM.
 
-## Warum Rust
+## What it detects
 
-- **Single Binary:** kein Python, kein Node, keine Runtime.
-- **Schnell:** Regex-Vorfilter im Mikrosekundenbereich; der LLM-Aufruf bleibt
-  der langsame Teil.
-- **Wenig Ressourcen:** kein NLP-Modell, kein Hintergrunddienst nur zum Tippen.
-- **Erweiterbar:** Gitleaks-TOML, eigenes YAML, OpenRedaction-Import und später
-  ein OpenCode-Plugin.
+- Well-known credentials such as AWS keys, GitHub/GitLab tokens, Stripe keys,
+  JWTs, private keys and common LLM API keys.
+- Values assigned to sensitive variable names in `.env`, YAML, JSON and TOML
+  files (`PASSWORD`, `CLIENT_SECRET`, `DATABASE_URL`, ...).
+- PII covered by the imported OpenRedaction defaults, including email addresses,
+  phone numbers, IBANs, payment cards, government IDs, addresses and more.
+- Project-specific patterns added as YAML or Gitleaks-compatible TOML.
 
-## Installation
+## Why rredact?
+
+- **Single binary:** no Python, Node.js or other runtime is required.
+- **Fast:** rule matching happens locally in microseconds; the LLM call remains
+  the slow part.
+- **Low resource usage:** no NLP model and no background service per keystroke.
+- **Reversible:** stable placeholders can be restored locally after the LLM has
+  answered.
+- **Good defaults:** known token formats, variable-name heuristics for `.env`
+  files, and a large imported PII rule set.
+- **Extensible:** project-specific YAML rules, Gitleaks-compatible TOML,
+  OpenRedaction imports, and an OpenCode plugin later.
+
+## Quick start
+
+Requires Rust 1.75 or newer.
+
+Build the binary:
 
 ```bash
 cargo build --release
 # Binary: target/release/rredact
 
-# oder systemweit:
+# Or install it system-wide:
 cargo install --path .
 ```
 
-Im Projekt initialisieren:
+Initialize a project:
 
 ```bash
 rredact init
 ```
 
-Das erzeugt `.rredact.yaml`, `.rredact/rules.d/user.yaml`,
-`.rredact/rules.d/llm.yaml` und passende `.gitignore`-Einträge.
+This creates `.rredact.yaml`, `.rredact/rules.d/user.yaml`,
+`.rredact/rules.d/llm.yaml`, and matching `.gitignore` entries.
 
-## Schnellstart
+Run it:
 
 ```bash
-# Nur prüfen (Exit 1 bei Findings ab "high")
+# Scan only; exits 1 if findings at or above "high" are found
 rredact scan .
 
-# Redigierte Kopien nach .rredact/redacted/ schreiben
+# Write redacted copies to .rredact/redacted/
 rredact redact .
 
-# Einzelne Datei nach stdout
+# Redact a single file to stdout
 rredact redact app.env
 
-# Platzhalter wiederherstellen
+# Restore placeholders
 rredact restore .rredact/redacted/app.env
 
-# Lokale API für ein externes LLM
+# Start the local API for an external LLM
 rredact serve --token "$RREDACT_API_TOKEN"
 ```
 
-### Formate
+### Reports and exit codes
 
 ```bash
 rredact scan . --format json
@@ -69,145 +86,217 @@ rredact scan . --fail-on critical
 rredact scan . --baseline .rredact/baseline.json   # optional
 ```
 
-### Modi
+- `scan` exits `1` when findings reach the configured threshold.
+- Configuration or runtime errors exit `2`.
 
-- `placeholder` (Default): `[REDACTED:KIND:1]`, umkehrbar.
-- `mask`: `***`, nicht umkehrbar.
-- `hash`: `[REDACTED:KIND:abcdef123456]`, nicht umkehrbar.
+### Redaction modes
+
+- `placeholder` (default): `[REDACTED:KIND:1]`, reversible.
+- `mask`: `***`, irreversible.
+- `hash`: `[REDACTED:KIND:abcdef123456]`, irreversible.
 
 ```bash
 rredact redact app.env --mode mask
 ```
 
-## Variablennamen für LLM-Regeln extrahieren
+## How it works
 
-Genau für den ressourcenschonenden Workflow gedacht: erst einmalig die
-Variablennamen extrahieren, dann vom LLM eine Regeldatei bauen lassen. Es
-werden **nur Namen und Positionen** ausgegeben, **keine Werte**.
+1. Rules find sensitive spans and apply value validators and optional context
+   checks.
+2. Each value is replaced with a stable placeholder such as
+   `[REDACTED:EMAIL:1]`.
+3. The original value is stored in `.rredact/mapping.json` with file mode `0600`.
+4. `rredact restore` replaces the placeholders with the original values.
 
-```bash
-# Standard: nur verdächtige Namen (secret, token, password, key, ...)
-rredact variables . --format text
+The mapping file is intentionally local. Treat it like a password store.
 
-# Alle erkannten Zuweisungsnamen
-rredact variables . --all-names --format json
+## Rules and defaults
 
-# Fertigen Prompt für ein lokales/Cloud-LLM ausgeben
-rredact variables . --format prompt > prompt.txt
-```
+Rules are loaded from several layers:
 
-Das LLM kann daraus YAML für `.rredact/rules.d/llm.yaml` oder eine
-Gitleaks-kompatible `.toml` bauen:
+1. Core bundles: `secrets`, `env`
+2. Generated default sets under `defaults/*.yaml`, `*.yml` or `*.toml`
+3. Inline rules in `.rredact.yaml` / `.rredact.toml`
+4. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml`
+5. `--rules FILE` and `RREDACT_RULES`
 
-```toml
-[[rules]]
-id = "workspace-secrets"
-description = "Workspace-spezifische Secrets"
-regex = '(?i)\b(db_password_production|internal_api_salt)\b\s*=\s*(.*)'
-secretGroup = 2
-```
+All default sets are loaded unless `sources` is configured.
 
-`rredact` lädt `.rredact/rules.d/*.yaml`, `*.yml` und `*.toml` automatisch.
-Gitleaks-Regeln werden als `secret`/`high` mit `secretGroup` übernommen.
+### File ownership
 
-## Regeln
+Keep generated imports and local rules separate:
 
-Regeln werden aus mehreren Quellen geladen:
+| Path | Purpose |
+| --- | --- |
+| `defaults/*` | Generated platform imports. Do not edit by hand. |
+| `.rredact/rules.d/user.yaml` | Hand-maintained project rules. |
+| `.rredact/rules.d/llm.yaml` | Rules generated by an LLM. |
 
-1. Core-Bundles: `secrets`, `env`
-2. Default-Sets aus `defaults/*.yaml`, `*.yml` oder `*.toml` – der Dateiname ist der Source-Name,
-   z. B. `defaults/openredaction.yaml` → `openredaction`. **Standardmäßig werden alle
-   Default-Sets geladen.**
-3. `.rredact.yaml` / `.rredact.toml` → `rules: [...]`
-4. `.rredact/rules.d/*.yaml`, `*.yml`, `*.toml` (hier schreibt auch ein LLM)
-5. `--rules DATEI` und `RREDACT_RULES`
+`rredact init` creates `user.yaml` and `llm.yaml` separately. Both are loaded
+automatically.
 
-`defaults/` ist ausschließlich für generierte Importe gedacht. Eigene Regeln
-gehören in `.rredact/rules.d/user.yaml`, LLM-Regeln in
-`.rredact/rules.d/llm.yaml`.
+### Which defaults are included?
 
-Lokal auswählen:
+The repository currently ships:
+
+- `34` core rules for secret formats and variable-name heuristics.
+- `defaults/openredaction.yaml`, generated from
+  [OpenRedaction](https://github.com/sam247/openredaction), with `578`
+  imported patterns.
+
+Together that is **612 rules**, of which **128 are active by default**. The
+remaining rules are present but disabled because they are broad,
+context-dependent, industry-specific or rely on JavaScript validators that
+cannot be executed exactly in Rust.
+
+Simple OpenRedaction context checks are imported as `context_required` and
+`context_excluded` and evaluated locally. For example:
 
 ```yaml
-# Default: Core + alle Default-Sets (sources einfach weglassen)
+  - id: invoice-number
+    description: Invoice number only in an invoice context
+    category: pii
+    severity: medium
+    pattern: '\bINV-[0-9]{4}\b'
+    context_required:
+      - '(?i)invoice|rechnung|bill'
+    context_excluded:
+      - '(?i)example|test'
+    context_window: 200
+    placeholder: INVOICE
+```
+
+Enable all disabled context rules at once:
+
+```yaml
+enable_context_rules: true
+```
+
+Or enable individual rules:
+
+```yaml
+enable_rules:
+  - openredaction-name
+```
+
+Be careful: enabling broad rules such as `NAME`, `USERNAME` or industry-specific
+patterns can increase false positives.
+
+### Selecting rule sources
+
+```yaml
+# Default: core + all imported defaults
 builtin: [secrets, env]
+
+# Core only, no imported defaults
+builtin: [secrets, env]
+sources: []
 
 # Core + OpenRedaction
 builtin: [secrets, env]
 sources: [openredaction]
 
-# Nur Core, keine importierten Defaults
-builtin: [secrets, env]
-sources: []
-
-# Nur die importierten OpenRedaction-Regeln
+# Only the imported OpenRedaction rules
 builtin: []
 sources: [openredaction]
 ```
 
-`builtin` und `sources` sind additiv. Aus Kompatibilitätsgründen funktioniert
-auch noch `builtin: [secrets, env, openredaction]`; neue Default-Dateien sollten
-aber über `sources` ausgewählt werden.
+`builtin` and `sources` are additive. For compatibility, source names in
+`builtin` also work (`builtin: [secrets, env, openredaction]`), but new files
+should be selected through `sources`.
 
-Beispiel für eine eigene YAML-Regel:
+### Variable-name heuristics
+
+The built-in `sensitive-variable-assignment` rule redacts the value when the
+variable name looks sensitive:
+
+```dotenv
+export DATABASE_PASSWORD="..."   # redacted
+STRIPE_SECRET_KEY=...            # redacted
+PUBLIC_KEY=...                   # left unchanged
+AUTH_TYPE=oauth                  # left unchanged
+```
+
+The same applies to `KEY: value` in YAML, `"key": "value"` in JSON and
+`key = value` in TOML. Quotes and comments are preserved.
+
+### Custom rules
 
 ```yaml
 version: 1
 rules:
   - id: internal-employee-id
-    description: Interne Mitarbeiter-ID
+    description: Internal employee ID
     category: pii
     severity: medium
     pattern: '\bEMP-\d{6}\b'
     placeholder: EMPLOYEE_ID
 ```
 
-Validieren:
+Validate rules before using them:
 
 ```bash
 rredact rules validate .rredact/rules.d/llm.yaml
 rredact rules list
 ```
 
-Mehr dazu in [docs/rules.md](docs/rules.md).
+See [docs/rules.md](docs/rules.md) for the full schema.
 
-### Variablennamen aus `.env` & Co.
+## Let an LLM write project rules
 
-Die Regel `sensitive-variable-assignment` redigiert den Wert, wenn der
-Variablenname nach einem Secret aussieht, z. B.:
+`rredact variables` extracts **names and positions only — never values**:
 
-```dotenv
-export DATABASE_PASSWORD="..."   # wird redigiert
-STRIPE_SECRET_KEY=...            # wird redigiert
-PUBLIC_KEY=...                   # bleibt
-AUTH_TYPE=oauth                  # bleibt
+```bash
+# Default: only suspicious names (secret, token, password, key, ...)
+rredact variables . --format text
+
+# All detected assignment names
+rredact variables . --all-names --format json
+
+# Ready-to-use prompt for a local or cloud LLM
+rredact variables . --format prompt > prompt.txt
 ```
 
-Das funktioniert auch für `KEY: value` (YAML), `"key": "value"` (JSON) und
-`key = value` (TOML). Kommentare und Anführungszeichen bleiben erhalten.
+The LLM can write YAML for `.rredact/rules.d/llm.yaml` or a Gitleaks-compatible
+TOML file:
 
-## Importierte Defaults
+```toml
+[[rules]]
+id = "workspace-secrets"
+description = "Workspace-specific secrets"
+regex = '(?i)\b(db_password_production|internal_api_salt)\b\s*=\s*(.*)'
+secretGroup = 2
+```
 
-`defaults/` enthält ausschließlich **generierte Importe** von Plattformen. Diese
-Datei wird nicht von Hand bearbeitet und nicht gemerged:
+`rredact` automatically loads `.rredact/rules.d/*.yaml`, `*.yml` and `*.toml`.
+Gitleaks rules are imported as `secret` / `high` using `secretGroup`.
 
-- `defaults/openredaction.yaml` – OpenRedaction (TypeScript-Patterns, 500+
-  Patterns: Kontakt-, Finanz-, Behörden-, Personal-, Branchen- und
-  Digital-Identity-PII)
+The included skill
+[.opencode/skills/rredact/SKILL.md](.opencode/skills/rredact/SKILL.md)
+describes **only** how to create and validate rules through the CLI. It does not
+contain API or restore instructions.
 
-Der Workflow
+## Imported defaults
+
+`defaults/` contains only **generated imports** from upstream platforms. The
+files are not edited by hand and never merged with local rules:
+
+```text
+defaults/openredaction.yaml
+```
+
+The workflow
 [.github/workflows/update-defaults.yml](.github/workflows/update-defaults.yml)
-aktualisiert die Datei wöchentlich und committet Änderungen. Jeder Import
-überschreibt seine Zieldatei vollständig; es wird nichts aus lokalen Regeln
-hineingemischt.
+updates this file weekly, validates it and commits changes. Each import
+overwrites its target file completely.
 
-Manuell:
+Run an import manually:
 
 ```bash
 rredact rules import-openredaction --force
 ```
 
-Optional mit eigener Quelle/Zieldatei:
+With a custom source or output file:
 
 ```bash
 rredact rules import-openredaction \
@@ -216,37 +305,14 @@ rredact rules import-openredaction \
   --force
 ```
 
-Der Importer liest die TypeScript-Pattern-Objekte. Nicht unterstützte
-Regex-Konstrukte werden mit Hinweis übersprungen. Es werden **alle** Patterns
-importiert, die OpenRedaction anbietet.
+The importer reads OpenRedaction's TypeScript pattern objects. Unsupported regex
+constructs are skipped with a note. All patterns that can be converted are
+imported; broad or context-heavy ones may be disabled by default as described
+above.
 
-Einfache OpenRedaction-Kontextchecks (`regex.test(context)`) werden als
-`context_required` / `context_excluded` importiert und bei der Erkennung
-berücksichtigt. Komplexe JS-Validatoren können wir nicht exakt ausführen.
-Breite Patterns (z. B. `NAME`, `USERNAME`, nationale Nummern-IDs) sowie
-Industry-/Digital-Identity-Patterns bleiben deshalb standardmäßig
-**deaktiviert** und mit `needs-context` getaggt. Gezielt aktivieren:
+## Local API for LLMs
 
-```yaml
-enable_rules:
-  - openredaction-name
-
-# Oder alle als "needs-context" markierten Regeln auf einmal:
-enable_context_rules: true
-```
-
-### Getrennte Dateien für Import, Handarbeit und LLM
-
-- `defaults/*` → **nur Importe**, generiert, nicht bearbeiten.
-- `.rredact/rules.d/user.yaml` → **manuell** gepflegte Projektregeln.
-- `.rredact/rules.d/llm.yaml` → Regeln, die ein **LLM** erzeugt.
-
-`rredact init` legt `user.yaml` und `llm.yaml` getrennt an. Beide werden
-automatisch geladen.
-
-## API für ein externes LLM
-
-`rredact serve` startet standardmäßig nur auf `127.0.0.1:8787`.
+`rredact serve` binds to `127.0.0.1:8787` by default:
 
 ```bash
 rredact serve --token "$RREDACT_API_TOKEN"
@@ -257,30 +323,18 @@ curl -s http://127.0.0.1:8787/redact \
   -d '{"text":"PASSWORD=hunter2","path":"app.env"}'
 ```
 
-Endpunkte: `GET /health`, `GET /rules`, `POST /redact`, `POST /restore`,
-`POST /rules/validate`, `POST /rules/reload`. Details in
-[docs/api.md](docs/api.md).
+Endpoints: `GET /health`, `GET /rules`, `POST /redact`, `POST /restore`,
+`POST /rules/validate`, `POST /rules/reload`. See [docs/api.md](docs/api.md).
 
-Die mitgelieferte Skill
-[.opencode/skills/rredact/SKILL.md](.opencode/skills/rredact/SKILL.md)
-beschreibt **ausschließlich** das Anlegen und Validieren eigener Regex-Regeln
-per CLI. Sie enthält keine API- oder Restore-Anweisungen.
+## CI and pre-commit
 
-## OpenCode-Plugin
-
-Der Kern ist als Bibliothek + lokale API geschnitten. Die geplante
-Plugin-Integration (Tool-Hooks, Session-Mappings, Cleanup) ist in
-[docs/opencode-plugin.md](docs/opencode-plugin.md) beschrieben.
-
-## CI
-
-Der Workflow [.github/workflows/rredact.yml](.github/workflows/rredact.yml)
-führt `cargo fmt --check`, Clippy, Tests und den Repository-Scan aus. Findings
-ab `high` lassen den Job fehlschlagen; der SARIF-Report wird zu GitHub Code
-Scanning hochgeladen. Für GitLab liegt ein Beispiel in
+The workflow [.github/workflows/rredact.yml](.github/workflows/rredact.yml)
+runs `cargo fmt --check`, Clippy, tests and a repository scan. Findings at or
+above `high` fail the job, and the SARIF report is uploaded to GitHub Code
+Scanning. A GitLab example is in
 [examples/gitlab-ci.yml](examples/gitlab-ci.yml).
 
-Für Pre-commit:
+Pre-commit:
 
 ```yaml
 repos:
@@ -290,30 +344,39 @@ repos:
       - id: rredact
 ```
 
-## Sicherheit
+## OpenCode plugin
 
-- `.rredact/mapping.json` enthält die Originalwerte. Sie wird mit Modus `0600`
-  geschrieben und ist in `.gitignore` eingetragen.
-- Die API bindet nur an Loopback. Für andere Hosts ist ein Token Pflicht
-  (oder explizit `--allow-remote`).
-- `scan` schreibt keine Mapping-Datei.
-- `--no-store` hält das Mapping nur im Speicher; nach Prozessende ist keine
-  Restaurierung mehr möglich.
-- `--show-values` gibt Rohwerte im Report aus; nur lokal verwenden.
-- Eine Baseline enthält Hashes (Fingerprints), keine Rohwerte.
-- Die Erkennung ist regex-/heuristikbasiert. Namen, Adressen ohne Straßenname
-  oder frei formulierte Secrets brauchen zusätzliche Regeln oder später ein
-  NER-Plugin.
+The core is intentionally split into a library and a local API. The planned
+plugin integration (tool hooks, per-session mappings, cleanup) is described in
+[docs/opencode-plugin.md](docs/opencode-plugin.md).
 
-## Entwicklung
+## Security
+
+- `.rredact/mapping.json` contains the original values. It is written with mode
+  `0600` and ignored by Git.
+- The API binds to loopback by default. Non-loopback hosts require a token (or
+  an explicit `--allow-remote`).
+- `scan` never writes a mapping file.
+- `--no-store` keeps the mapping in memory only; placeholders cannot be restored
+  after the process exits.
+- `--show-values` prints raw values in reports. Use it locally only.
+- A baseline contains hashes (fingerprints), not raw values.
+- Detection is regex- and heuristic-based. Names, free-form addresses or
+  uncommon secrets need additional rules or a future NER plugin.
+- OpenRedaction validators are arbitrary JavaScript. The Rust engine can
+  evaluate simple value and context checks, but not arbitrary JS logic. Such
+  patterns remain imported and disabled by default.
+
+## Development
 
 ```bash
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
+./target/release/rredact scan . --fail-on high
 ```
 
-## Lizenz
+## License
 
-MIT. Die OpenRedaction-Regeln stehen ebenfalls unter MIT; siehe
+MIT. The imported OpenRedaction rules are also MIT-licensed; see
 [NOTICE](NOTICE).
