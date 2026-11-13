@@ -294,18 +294,26 @@ Breite, kontextabhängige OpenRedaction-Patterns werden importiert, aber
 standardmäßig deaktiviert (`needs-context`). Sie lassen sich per
 `enable_rules` gezielt aktivieren.
 
-## Regeln von einem LLM schreiben lassen
+## Kalibrierung mit einem LLM
 
 Die Skill-Datei
 [.opencode/skills/rredact/SKILL.md](../.opencode/skills/rredact/SKILL.md)
-beschreibt die CLI-Initialisierung eines Workspace: scannen, Variablennamen
-extrahieren, Regeln anlegen und validieren sowie einen sauberen Scan
-verifizieren. Wichtig:
+beschreibt die Kalibrierung eines Workspace: bekannte Regeln anwenden, die
+redigierte Ausgabe von einem vertrauenswürdigen LLM auf Lücken prüfen lassen,
+Regeln anlegen und validieren sowie einen sauberen Scan verifizieren.
+
+Die Kalibrierung ist ein bewusster Trust-Boundary: Die redigierte Ausgabe kann
+noch unbekannte Secrets enthalten. Nutze einen vertrauenswürdigen Anbieter,
+idealerweise mit ZDR, oder ein lokales Modell. Runtime-Redaction muss automatisch
+erfolgen; verlässt sich nicht darauf, dass das LLM freiwillig redigiert.
+
+Wichtig:
 
 - Keine echten Secrets in Regeldateien schreiben.
 - Immer `rredact rules validate DATEI` ausführen.
 - Neue Regeln in `.rredact/rules.d/llm.yaml` ablegen; sie werden beim nächsten
   Scan/Redact automatisch geladen.
+- Kalibrierungsausgabe unter `.rredact/calibration/` nach Gebrauch löschen.
 - Keine Lookarounds oder Backreferences verwenden.
 - Regex lieber mit `\b` verankern und nicht zu breit machen.
 - Für Strukturen `group` verwenden, statt den ganzen Treffer zu ersetzen.

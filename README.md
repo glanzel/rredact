@@ -273,9 +273,11 @@ Gitleaks rules are imported as `secret` / `high` using `secretGroup`.
 
 The included skill
 [.opencode/skills/rredact/SKILL.md](.opencode/skills/rredact/SKILL.md)
-describes how to initialize a workspace and author rules through the CLI:
-initialize, audit with `--all`, extract names, write and validate rules, resolve
-findings, and verify a clean scan. It contains no API or restore instructions.
+describes the optional **calibration workflow**: apply the known rules, let a
+trusted LLM review the redacted output for secrets that slipped through, and
+turn those gaps into validated project rules. Calibration output may still
+contain unknown secrets, so it must be handled carefully and deleted afterwards.
+The skill contains no API or restore instructions.
 
 ## Imported defaults
 
@@ -367,6 +369,10 @@ plugin integration (tool hooks, per-session mappings, cleanup) is described in
 - OpenRedaction validators are arbitrary JavaScript. The Rust engine can
   evaluate simple value and context checks, but not arbitrary JS logic. Such
   patterns remain imported and disabled by default.
+- Calibration output under `.rredact/calibration/` may contain secrets that the
+  current rules missed. It is ignored by Git and must be deleted after use.
+- Runtime redaction must be automatic. Do not rely on an LLM to redact its own
+  inputs voluntarily.
 
 ## Development
 

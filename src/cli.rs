@@ -49,6 +49,7 @@ skip_paths:
   - ".venv/**"
   - "target/**"
   - ".rredact/**"
+  - ".rredact/calibration/**"
   - "defaults/**"
   - "*.bak"
   - "*.orig"
@@ -85,7 +86,7 @@ version: 1
 rules: []
 "#;
 
-const INIT_GITIGNORE: &str = "mapping.json\nsessions/\nredacted/\nout/\n";
+const INIT_GITIGNORE: &str = "mapping.json\nsessions/\nredacted/\ncalibration/\nout/\n";
 
 #[derive(Debug, Parser)]
 #[command(
@@ -948,6 +949,7 @@ fn cmd_init(args: InitArgs) -> Result<i32> {
         ".rredact/mapping.json",
         ".rredact/sessions/",
         ".rredact/redacted/",
+        ".rredact/calibration/",
         ".rredact/out/",
     ];
     let missing: Vec<&str> = additions

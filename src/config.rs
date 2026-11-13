@@ -47,6 +47,7 @@ const DEFAULT_SKIP_PATHS: &[&str] = &[
     "build/**",
     ".rredact/mapping.json",
     ".rredact/redacted/**",
+    ".rredact/calibration/**",
     ".rredact/out/**",
     "defaults/**",
     "*.lock",
