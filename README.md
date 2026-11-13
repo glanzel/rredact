@@ -273,8 +273,9 @@ Gitleaks rules are imported as `secret` / `high` using `secretGroup`.
 
 The included skill
 [.opencode/skills/rredact/SKILL.md](.opencode/skills/rredact/SKILL.md)
-describes **only** how to create and validate rules through the CLI. It does not
-contain API or restore instructions.
+describes how to initialize a workspace and author rules through the CLI:
+initialize, audit with `--all`, extract names, write and validate rules, resolve
+findings, and verify a clean scan. It contains no API or restore instructions.
 
 ## Imported defaults
 

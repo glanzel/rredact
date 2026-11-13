@@ -298,8 +298,9 @@ standardmäßig deaktiviert (`needs-context`). Sie lassen sich per
 
 Die Skill-Datei
 [.opencode/skills/rredact/SKILL.md](../.opencode/skills/rredact/SKILL.md)
-beschreibt ausschließlich das Anlegen und Validieren von Regeln per CLI.
-Wichtig:
+beschreibt die CLI-Initialisierung eines Workspace: scannen, Variablennamen
+extrahieren, Regeln anlegen und validieren sowie einen sauberen Scan
+verifizieren. Wichtig:
 
 - Keine echten Secrets in Regeldateien schreiben.
 - Immer `rredact rules validate DATEI` ausführen.
