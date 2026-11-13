@@ -13,8 +13,8 @@ The important principle is:
 > to redact voluntarily.**
 
 This skill is only the one-time (or periodic) **calibration** step. It assumes
-that rredact is installed and that runtime redaction/interception is active or
-will be wired up (currently CLI/API; later the OpenCode plugin).
+that rredact is installed and that runtime redaction/interception is active
+(CLI, local API or the OpenCode plugin under `packages/opencode-rredact`).
 
 During calibration, known rules are applied first. The LLM then reads the
 **already-redacted output** and looks for secrets that slipped through the
@@ -72,8 +72,8 @@ Current options:
 
 - CLI: `rredact redact ...` before content leaves the machine.
 - Local API: `rredact serve` for an integration.
-- OpenCode plugin: planned integration that redacts tool output and prompts
-  automatically before they reach the model.
+- OpenCode plugin: `packages/opencode-rredact` redacts prompts, tool results and
+  assembled model requests automatically before they reach the model.
 
 Do not use this skill as a substitute for runtime redaction. Calibration only
 improves the rules that runtime redaction uses.
