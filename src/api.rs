@@ -1,5 +1,6 @@
 //! Local HTTP API for LLM/plugin integrations.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -10,15 +11,20 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 
-use crate::config::load_config;
+use crate::config::{load_config, Config};
 use crate::engine::Engine;
+use crate::mapping::MappingStore;
 use crate::models::{Mode, VERSION};
 use crate::rules::{compile_rule_configs, RuleConfig};
 
 #[derive(Clone)]
 pub struct AppState {
     pub engine: Arc<Mutex<Engine>>,
+    pub config: Arc<Mutex<Config>>,
+    pub sessions: Arc<Mutex<HashMap<String, Arc<Mutex<Engine>>>>>,
+    pub session_dir: Option<PathBuf>,
     pub token: Option<String>,
     pub config_path: Option<PathBuf>,
     pub root: PathBuf,
@@ -39,9 +45,9 @@ pub fn router(state: AppState) -> Router {
 
 async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
     let rules = state
-        .engine
+        .config
         .lock()
-        .map(|engine| engine.config.rules.len())
+        .map(|config| config.rules.len())
         .unwrap_or(0);
     Json(json!({
         "status": "ok",
@@ -64,6 +70,8 @@ async fn rules(
 struct RedactRequest {
     text: String,
     #[serde(default)]
+    session: Option<String>,
+    #[serde(default)]
     path: Option<String>,
     #[serde(default)]
     mode: Option<Mode>,
@@ -77,7 +85,8 @@ async fn redact(
     Json(request): Json<RedactRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     check_auth(&headers, &state.token)?;
-    let mut engine = state.engine.lock().map_err(|_| ApiError::internal())?;
+    let engine_handle = session_engine(&state, request.session.as_deref())?;
+    let mut engine = engine_handle.lock().map_err(|_| ApiError::internal())?;
     let result = engine
         .redact(
             &request.text,
@@ -99,6 +108,8 @@ async fn redact(
 #[derive(Debug, Deserialize)]
 struct RestoreRequest {
     text: String,
+    #[serde(default)]
+    session: Option<String>,
 }
 
 async fn restore(
@@ -107,7 +118,8 @@ async fn restore(
     Json(request): Json<RestoreRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     check_auth(&headers, &state.token)?;
-    let engine = state.engine.lock().map_err(|_| ApiError::internal())?;
+    let engine_handle = session_engine(&state, request.session.as_deref())?;
+    let engine = engine_handle.lock().map_err(|_| ApiError::internal())?;
     let (text, restored, unresolved) = engine.restore(&request.text);
     Ok(Json(json!({
         "text": text,
@@ -162,9 +174,41 @@ async fn reload_rules(
     )
     .map_err(ApiError::bad_request)?;
     let count = config.rules.len();
+    *state.config.lock().map_err(|_| ApiError::internal())? = config.clone();
     let mut engine = state.engine.lock().map_err(|_| ApiError::internal())?;
-    engine.reload(config);
+    engine.reload(config.clone());
+    drop(engine);
+    let sessions = state.sessions.lock().map_err(|_| ApiError::internal())?;
+    for session in sessions.values() {
+        if let Ok(mut engine) = session.lock() {
+            engine.reload(config.clone());
+        }
+    }
     Ok(Json(json!({"reloaded": true, "count": count})))
+}
+
+fn session_engine(state: &AppState, session: Option<&str>) -> Result<Arc<Mutex<Engine>>, ApiError> {
+    let Some(session) = session else {
+        return Ok(state.engine.clone());
+    };
+    let key = hex::encode(Sha256::digest(session.as_bytes()));
+    let mut sessions = state.sessions.lock().map_err(|_| ApiError::internal())?;
+    if let Some(engine) = sessions.get(&key) {
+        return Ok(engine.clone());
+    }
+    let config = state
+        .config
+        .lock()
+        .map_err(|_| ApiError::internal())?
+        .clone();
+    let mapping_path = state
+        .session_dir
+        .as_ref()
+        .map(|directory| directory.join(format!("{key}.json")));
+    let mapping = MappingStore::new(mapping_path).map_err(ApiError::bad_request)?;
+    let engine = Arc::new(Mutex::new(Engine::new(config, mapping, None)));
+    sessions.insert(key, engine.clone());
+    Ok(engine)
 }
 
 fn check_auth(headers: &HeaderMap, token: &Option<String>) -> Result<(), ApiError> {

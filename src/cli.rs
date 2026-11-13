@@ -1,5 +1,6 @@
 //! Command line interface.
 
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{IsTerminal, Write};
@@ -884,8 +885,20 @@ fn cmd_serve(args: ServeArgs) -> Result<i32> {
     if !loopback && token.is_none() && !args.allow_remote {
         bail!("refusing to bind a non-loopback address without a token; use --token or --allow-remote");
     }
+    let session_dir = if args.common.no_store {
+        None
+    } else {
+        config
+            .mapping_path
+            .as_ref()
+            .and_then(|path| path.parent())
+            .map(|parent| parent.join("sessions"))
+    };
     let state = AppState {
         engine: Arc::new(Mutex::new(engine)),
+        config: Arc::new(Mutex::new(config.clone())),
+        sessions: Arc::new(Mutex::new(HashMap::new())),
+        session_dir,
         token,
         config_path: config.config_path.clone(),
         root: config.root.clone(),

@@ -22,12 +22,20 @@ impl TestServer {
             Some(project.join(".rredact/mapping.json"))
         })
         .unwrap();
+        let session_dir = if no_store {
+            None
+        } else {
+            Some(project.join(".rredact/sessions"))
+        };
         let state = AppState {
             engine: std::sync::Arc::new(std::sync::Mutex::new(Engine::new(
                 config.clone(),
                 mapping,
                 None,
             ))),
+            config: std::sync::Arc::new(std::sync::Mutex::new(config.clone())),
+            sessions: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+            session_dir,
             token: token.map(str::to_string),
             config_path: config.config_path.clone(),
             root: config.root.clone(),
@@ -209,4 +217,39 @@ fn no_store_keeps_mapping_in_memory_only() {
     );
     assert_eq!(status, 200);
     assert_eq!(restored["restored"], 1);
+}
+
+#[test]
+fn session_mappings_are_isolated() {
+    let project = tempfile::tempdir().unwrap();
+    let server = TestServer::start(project.path(), None, false);
+    let (status, body) = call(
+        &server,
+        "/redact",
+        Some(json!({"text": "PASSWORD=real-pass-42", "session": "session-a"})),
+        None,
+    );
+    assert_eq!(status, 200);
+    let redacted = body["text"].as_str().unwrap().to_string();
+    assert!(redacted.contains("[REDACTED:"));
+
+    let (status, other) = call(
+        &server,
+        "/restore",
+        Some(json!({"text": redacted, "session": "session-b"})),
+        None,
+    );
+    assert_eq!(status, 200);
+    assert_eq!(other["restored"], 0);
+    assert!(!other["unresolved"].as_array().unwrap().is_empty());
+
+    let (status, same) = call(
+        &server,
+        "/restore",
+        Some(json!({"text": redacted, "session": "session-a"})),
+        None,
+    );
+    assert_eq!(status, 200);
+    assert_eq!(same["text"], "PASSWORD=real-pass-42");
+    assert_eq!(same["restored"], 1);
 }
