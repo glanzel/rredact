@@ -31,6 +31,7 @@ skip_paths:
   - "target/**"
   - "node_modules/**"
   - ".rredact/**"
+  - ".rredact/calibration/**"
   - "defaults/**"
   - "tests/fixtures/**"
   - "*.bak"
