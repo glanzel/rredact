@@ -253,3 +253,36 @@ fn session_mappings_are_isolated() {
     assert_eq!(same["text"], "PASSWORD=real-pass-42");
     assert_eq!(same["restored"], 1);
 }
+
+#[test]
+fn deleting_a_session_drops_its_mapping() {
+    let project = tempfile::tempdir().unwrap();
+    let server = TestServer::start(project.path(), None, false);
+    let (status, body) = call(
+        &server,
+        "/redact",
+        Some(json!({"text": "PASSWORD=real-pass-42", "session": "session-a"})),
+        None,
+    );
+    assert_eq!(status, 200);
+    let redacted = body["text"].as_str().unwrap().to_string();
+    let session_dir = project.path().join(".rredact/sessions");
+    assert!(std::fs::read_dir(&session_dir).unwrap().next().is_some());
+
+    let response = ureq::delete(&server.url("/sessions/session-a"))
+        .call()
+        .unwrap();
+    let deleted: serde_json::Value =
+        serde_json::from_str(&response.into_string().unwrap()).unwrap();
+    assert_eq!(deleted["deleted"], true);
+    assert!(std::fs::read_dir(&session_dir).unwrap().next().is_none());
+
+    let (status, other) = call(
+        &server,
+        "/restore",
+        Some(json!({"text": redacted, "session": "session-a"})),
+        None,
+    );
+    assert_eq!(status, 200);
+    assert_eq!(other["restored"], 0);
+}

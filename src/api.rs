@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use axum::extract::{DefaultBodyLimit, State};
+use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -37,6 +37,7 @@ pub fn router(state: AppState) -> Router {
         .route("/rules", get(rules))
         .route("/redact", post(redact))
         .route("/restore", post(restore))
+        .route("/sessions/:session", axum::routing::delete(delete_session))
         .route("/rules/validate", post(validate_rules))
         .route("/rules/reload", post(reload_rules))
         .layer(DefaultBodyLimit::max(20 * 1024 * 1024))
@@ -128,6 +129,29 @@ async fn restore(
     })))
 }
 
+async fn delete_session(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(session): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    check_auth(&headers, &state.token)?;
+    let key = session_key(&session);
+    let mut removed = state
+        .sessions
+        .lock()
+        .map_err(|_| ApiError::internal())?
+        .remove(&key)
+        .is_some();
+    if let Some(directory) = &state.session_dir {
+        let path = directory.join(format!("{key}.json"));
+        if path.exists() {
+            std::fs::remove_file(&path).map_err(ApiError::bad_request)?;
+            removed = true;
+        }
+    }
+    Ok(Json(json!({"deleted": removed})))
+}
+
 #[derive(Debug, Deserialize)]
 struct ValidateRequest {
     #[serde(default)]
@@ -187,11 +211,15 @@ async fn reload_rules(
     Ok(Json(json!({"reloaded": true, "count": count})))
 }
 
+fn session_key(session: &str) -> String {
+    hex::encode(Sha256::digest(session.as_bytes()))
+}
+
 fn session_engine(state: &AppState, session: Option<&str>) -> Result<Arc<Mutex<Engine>>, ApiError> {
     let Some(session) = session else {
         return Ok(state.engine.clone());
     };
-    let key = hex::encode(Sha256::digest(session.as_bytes()));
+    let key = session_key(session);
     let mut sessions = state.sessions.lock().map_err(|_| ApiError::internal())?;
     if let Some(engine) = sessions.get(&key) {
         return Ok(engine.clone());
