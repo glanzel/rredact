@@ -32,6 +32,7 @@ skip_paths:
   - "node_modules/**"
   - ".rredact/**"
   - ".rredact/calibration/**"
+  - ".rredact/sessions/**"
   - "defaults/**"
   - "tests/fixtures/**"
   - "*.bak"
