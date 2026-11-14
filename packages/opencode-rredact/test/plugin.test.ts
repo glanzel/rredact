@@ -71,6 +71,19 @@ test(
       assert.equal(prompt.prompt.text.includes("real-pass-42"), false)
       assert.match(prompt.prompt.text, /\[REDACTED:ENV_SECRET:1\]/)
 
+      await assert.rejects(
+        async () => {
+          await promptHandler({
+            sessionID: "session-a",
+            prompt: {
+              text: "read this",
+              files: [{ uri: "file:///workspace/.rredact/mapping.json" }],
+            },
+          })
+        },
+        /blocked prompt attachment/,
+      )
+
       const result = {
         tool: "bash",
         sessionID: "session-a",
@@ -89,6 +102,27 @@ test(
       }
       await beforeHandler(write)
       assert.equal(write.input.content, "PASSWORD=real-pass-42")
+
+      await assert.rejects(
+        async () => {
+          await beforeHandler({
+            tool: "read",
+            sessionID: "session-a",
+            input: { filePath: ".rredact/mapping.json" },
+          })
+        },
+        /blocked/,
+      )
+      await assert.rejects(
+        async () => {
+          await beforeHandler({
+            tool: "bash",
+            sessionID: "session-a",
+            input: { command: "cat .rredact/sessions/x.json" },
+          })
+        },
+        /blocked/,
+      )
     } finally {
       await cleanup!()
       assert.deepEqual(

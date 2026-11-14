@@ -136,6 +136,12 @@ Do **not** give the LLM:
 - `.rredact/mapping.json`,
 - the original files alongside the calibration output.
 
+The OpenCode plugin blocks tool reads of `.rredact/calibration/` by default.
+Disable the plugin (or set `blockSensitivePaths: false`) for this calibration
+step; otherwise the LLM cannot read the calibration copy. The plugin keeps its
+session mappings in memory by default, so it does not create
+`.rredact/mapping.json` on its own.
+
 ## 5. Let the LLM review the calibration copy
 
 The LLM should read the files under `.rredact/calibration/` completely and look

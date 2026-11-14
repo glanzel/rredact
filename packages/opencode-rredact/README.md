@@ -17,7 +17,7 @@ values with placeholders.
 OpenCode server
   ├─ session.prompt      -> redact user prompt at admission
   ├─ tool.execute.after  -> redact tool output before it is stored
-  ├─ tool.execute.before -> restore placeholders for write/edit inputs
+  ├─ tool.execute.before -> block secret paths + restore write/edit inputs
   └─ session.context     -> redact system text + transcript before dispatch
       (also compaction, title and generate requests)
 
@@ -32,9 +32,14 @@ The `context` hooks are the authoritative egress point: they run immediately
 before a model request is dispatched and also cover content that bypasses the
 prompt hook, such as synthetic messages and skill or attachment text.
 
-Every OpenCode session gets its own mapping file under
-`.rredact/sessions/<sha256>.json`. Session files are written with mode `0600`
-and are ignored by Git. They are deleted when OpenCode emits `session.deleted`.
+Every OpenCode session gets its own mapping. By default the mapping lives only
+in the memory of the `rredact serve` process (`--no-store`), so there is no
+session file for a tool to read. Set `storeSessionMappings: true` only if you
+need persistence and accept that the file contains the original values.
+
+The plugin also blocks tool access to known secret-bearing paths such as
+`.rredact/mapping.json` and `.rredact/sessions/`. That is defense in depth, not
+a sandbox: a shell command can obfuscate a path.
 
 ## Requirements
 
@@ -118,6 +123,9 @@ Pass options through the object form in `opencode.json(c)`:
 | `redactContext` | `true` | Redact the assembled model request (including compaction, title and generate). |
 | `restoreToolInputs` | `true` | Restore placeholders in write/edit tool inputs. |
 | `restoreTools` | `write`, `edit`, `multiedit`, `apply_patch` | Tools whose inputs may be restored. |
+| `storeSessionMappings` | `false` | Persist session mappings under `.rredact/sessions/`. |
+| `blockSensitivePaths` | `true` | Block tools from reading secret-bearing local files. |
+| `sensitivePaths` | `.rredact/mapping.json`, `.rredact/sessions`, `.rredact/calibration`, `.rredact/redacted`, `.rredact/out` | Paths that tools must not read. |
 | `startupTimeoutMs` | `10_000` | How long to wait for `rredact serve` to report its address. |
 | `requestTimeoutMs` | `15_000` | Timeout for one API request. |
 
@@ -126,12 +134,20 @@ Pass options through the object form in `opencode.json(c)`:
 If `url` is not set, the plugin starts:
 
 ```bash
-rredact serve --host 127.0.0.1 --port 0 --token <random>
+rredact serve --host 127.0.0.1 --port 0 --token <random> --no-store
 ```
 
 It reads the address from the `listening on http://...` line, verifies
 `GET /health`, and keeps the token in memory only. The process is terminated
 when the plugin unloads.
+
+The `--no-store` flag is added by default. It keeps the mapping in the server
+process only; placeholders stay restorable while the plugin is loaded, but not
+after a server restart. Pass `storeSessionMappings: true` to persist mappings
+under `.rredact/sessions/<sha256>.json` (mode `0600`, ignored by Git). Those
+files contain the original values and are readable by any tool with file
+access; the path guard blocks the obvious reads, but a shell can obfuscate a
+path. Treat persisted mappings as a deliberate trade-off.
 
 The server runs with the OpenCode project directory as its working directory,
 so the project's `.rredact.yaml` and `.rredact/rules.d/*.yaml` are used
@@ -146,6 +162,9 @@ instead of continuing with plaintext.
 `failClosed: false` is available for debugging, but it sends unredacted content
 when rredact is unavailable. Do not use it in a real workspace.
 
+Path blocking (`blockSensitivePaths`) always fails closed, independent of
+`failClosed`: a tool call that targets a secret-bearing path is rejected.
+
 ## What is redacted
 
 - User prompt text and file descriptions.
@@ -158,6 +177,19 @@ Binary data is never sent to rredact: `Uint8Array`/`ArrayBuffer` values and
 `data:...;base64,` strings are left untouched. File attachments keep their URI
 and MIME type.
 
+## What is not protected
+
+- Rule-based detection cannot prove that a file is secret-free. A bare password
+  without a sensitive variable name, or an unknown token format, can pass
+  through. Calibrate the rules for the workspace.
+- Media and binary parts are not rewritten.
+- Tool schemas and provider request options are not redacted.
+- Persisted mappings (`storeSessionMappings: true`) contain the original values
+  and are readable by any process with the same user. The path guard blocks
+  obvious reads, not obfuscated shell commands.
+- The plugin is not a sandbox. It limits what reaches the model, but a
+  prompt-injected model can still misuse tools that are allowed to run locally.
+
 ## Restoring write/edit inputs
 
 When a tool reads a file, the model sees placeholders. If it then writes the
@@ -167,19 +199,27 @@ with `[REDACTED:...]`.
 
 Restoration only replaces placeholders that exist in the current session
 mapping. Unknown placeholders stay as they are. Restoration is local; it does
-not send the real values to the model.
+not send the real values to the model. With the default in-memory mapping,
+restoration works only while the plugin's `rredact serve` process is running.
 
 ## Security notes
 
-- The mapping is local and contains the original values. Never commit it and
-  never send it to a model.
+- By default the mapping is memory-only. If you enable
+  `storeSessionMappings`, the files contain the original values: never commit
+  them and never send them to a model.
+- The path guard blocks tool reads of `.rredact/mapping.json`,
+  `.rredact/sessions/`, `.rredact/calibration/`, `.rredact/redacted/` and
+  `.rredact/out/`. It is defense in depth, not a sandbox; a shell command can
+  obfuscate a path. Add custom mapping paths from `.rredact.yaml` or `--mapping`
+  to `sensitivePaths`.
 - Redaction is regex- and heuristic-based. It cannot prove that content is
   secret-free. Calibrate the rules for the workspace (see the
   [rredact skill](../../.opencode/skills/rredact/SKILL.md)).
 - The plugin limits what reaches the model. It does not prevent a
   prompt-injected model from misusing tools that are allowed to run locally.
-- Calibration is a separate, explicit trust boundary. Do not confuse it with
-  runtime redaction.
+- Calibration is a separate, explicit trust boundary. The plugin blocks
+  `.rredact/calibration/` by default, so run calibration with the plugin
+  disabled (or with `blockSensitivePaths: false`).
 
 ## Development
 

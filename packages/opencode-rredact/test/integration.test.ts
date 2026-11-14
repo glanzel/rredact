@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import test from "node:test"
@@ -34,11 +34,40 @@ test(
       const redacted = await runtime.redact(secret, "session-test", "app.env")
       assert.match(redacted, /\[REDACTED:/)
       assert.equal(redacted.includes("real-pass-42"), false)
+      assert.equal(existsSync(join(directory, ".rredact/sessions")), false)
 
       assert.equal(await runtime.restoreText(redacted, "session-test"), secret)
 
       await runtime.deleteSession("session-test")
       assert.equal(await runtime.restoreText(redacted, "session-test"), redacted)
+    } finally {
+      await runtime.stop()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  },
+)
+
+test(
+  "session mappings persist only when explicitly enabled",
+  { skip: binary === undefined ? "build rredact first (cargo build)" : false },
+  async () => {
+    const directory = mkdtempSync(join(tmpdir(), "rredact-plugin-store-"))
+    const { options } = resolveOptions({
+      binary,
+      storeSessionMappings: true,
+      startupTimeoutMs: 15_000,
+      requestTimeoutMs: 5_000,
+    })
+    const runtime = new RRedactRuntime(options, directory)
+    const sessionDir = join(directory, ".rredact/sessions")
+
+    try {
+      await runtime.start()
+      await runtime.redact("PASSWORD=real-pass-42", "persisted", "app.env")
+      assert.equal(readdirSync(sessionDir).length, 1)
+
+      await runtime.deleteSession("persisted")
+      assert.equal(readdirSync(sessionDir).length, 0)
     } finally {
       await runtime.stop()
       rmSync(directory, { recursive: true, force: true })

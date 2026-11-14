@@ -35,6 +35,16 @@ export interface RRedactPluginOptions {
   restoreToolInputs?: boolean
   /** Tools whose inputs may be restored. Default: `write`, `edit`, `multiedit`, `apply_patch`. */
   restoreTools?: string[]
+  /**
+   * Persist per-session mappings under `.rredact/sessions/`. Default: `false`
+   * (in-memory only). Persisted mappings contain the original secrets and are
+   * readable by any tool with file access.
+   */
+  storeSessionMappings?: boolean
+  /** Block tool access to `sensitivePaths`. Default: `true`. */
+  blockSensitivePaths?: boolean
+  /** Local paths that tools must never read. */
+  sensitivePaths?: string[]
   /** Milliseconds to wait for `rredact serve` to report its address. Default: `10_000`. */
   startupTimeoutMs?: number
   /** Milliseconds before an API request is aborted. Default: `15_000`. */
@@ -53,11 +63,26 @@ export interface ResolvedOptions {
   redactContext: boolean
   restoreToolInputs: boolean
   restoreTools: string[]
+  storeSessionMappings: boolean
+  blockSensitivePaths: boolean
+  sensitivePaths: string[]
   startupTimeoutMs: number
   requestTimeoutMs: number
 }
 
 export const DEFAULT_RESTORE_TOOLS = ["write", "edit", "multiedit", "apply_patch"]
+
+/**
+ * Files that contain original values or redacted copies with unknown values.
+ * They must never reach the model, even though they live inside the workspace.
+ */
+export const DEFAULT_SENSITIVE_PATHS = [
+  ".rredact/mapping.json",
+  ".rredact/sessions",
+  ".rredact/calibration",
+  ".rredact/redacted",
+  ".rredact/out",
+]
 
 export interface ResolveResult {
   options: ResolvedOptions
@@ -159,6 +184,9 @@ export function resolveOptions(raw: Readonly<Record<string, unknown>>): ResolveR
     redactContext: readBoolean(raw, "redactContext", true, warnings),
     restoreToolInputs: readBoolean(raw, "restoreToolInputs", true, warnings),
     restoreTools: readStringArray(raw, "restoreTools", DEFAULT_RESTORE_TOOLS, warnings),
+    storeSessionMappings: readBoolean(raw, "storeSessionMappings", false, warnings),
+    blockSensitivePaths: readBoolean(raw, "blockSensitivePaths", true, warnings),
+    sensitivePaths: readStringArray(raw, "sensitivePaths", DEFAULT_SENSITIVE_PATHS, warnings),
     startupTimeoutMs: readNumber(raw, "startupTimeoutMs", 10_000, warnings),
     requestTimeoutMs: readNumber(raw, "requestTimeoutMs", 15_000, warnings),
   }

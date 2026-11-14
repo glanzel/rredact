@@ -10,7 +10,7 @@ vorsichtig ist.
 OpenCode server
   ├─ session.prompt      -> Prompt bei der Annahme redigieren
   ├─ tool.execute.after  -> Tool-Ergebnis vor dem Speichern redigieren
-  ├─ tool.execute.before -> Platzhalter in write/edit-Inputs wiederherstellen
+  ├─ tool.execute.before -> sensible Pfade blockieren, write/edit-Inputs wiederherstellen
   └─ session.context     -> Systemtext + Transkript vor dem Versand redigieren
       (zusätzlich compaction, title und generate)
 
@@ -79,15 +79,18 @@ ist fail-closed und blockiert Prompts, wenn rredact nicht startet.
 | `redactContext` | `true` | Model-Requests inkl. compaction/title/generate redigieren |
 | `restoreToolInputs` | `true` | Platzhalter in write/edit-Inputs wiederherstellen |
 | `restoreTools` | `write`, `edit`, `multiedit`, `apply_patch` | Tools für die Wiederherstellung |
-| `startupTimeoutMs` | `10000` | Wartezeit auf die Server-Adresse |
-| `requestTimeoutMs` | `15000` | Timeout pro API-Request |
+| `storeSessionMappings` | `false` | Session-Mappings unter `.rredact/sessions/` speichern |
+| `blockSensitivePaths` | `true` | Tools am Lesen sensibler Dateien hindern |
+| `sensitivePaths` | `.rredact/mapping.json`, `.rredact/sessions`, `.rredact/calibration`, `.rredact/redacted`, `.rredact/out` | Pfade, die Tools nicht lesen dürfen |
+| `startupTimeoutMs` | `10_000` | Wartezeit auf die Server-Adresse |
+| `requestTimeoutMs` | `15_000` | Timeout pro API-Request |
 
 ## Server-Lebenszyklus
 
 Ohne `url` startet das Plugin:
 
 ```bash
-rredact serve --host 127.0.0.1 --port 0 --token <zufällig>
+rredact serve --host 127.0.0.1 --port 0 --token <zufällig> --no-store
 ```
 
 Es liest die Adresse aus der Zeile `listening on http://...`, prüft
@@ -95,11 +98,17 @@ Es liest die Adresse aus der Zeile `listening on http://...`, prüft
 wird der Prozess beendet. Das Arbeitsverzeichnis ist das OpenCode-Projekt, damit
 `.rredact.yaml` und `.rredact/rules.d/*.yaml` automatisch geladen werden.
 
+`--no-store` ist Default: Das Mapping lebt nur im `rredact serve`-Prozess.
+Platzhalter bleiben während der Laufzeit wiederherstellbar, aber nicht nach
+einem Server-Neustart. Mit `storeSessionMappings: true` werden sie unter
+`.rredact/sessions/` persistiert. Diese Dateien enthalten Originalwerte und sind
+für jeden Prozess desselben Benutzers lesbar; der Pfad-Guard blockiert nur
+offensichtliche Zugriffe.
+
 ## Sessions
 
-Jede OpenCode-Session bekommt ein eigenes Mapping unter
-`.rredact/sessions/<sha256>.json` (Modus `0600`, von Git ignoriert). Beim
-`session.deleted`-Event löscht das Plugin die Datei über
+Jede OpenCode-Session bekommt ein eigenes Mapping, standardmäßig nur im
+Speicher. Beim `session.deleted`-Event löscht das Plugin das Mapping über
 `DELETE /sessions/:session`. Ohne diese Trennung würden parallele Agents ihre
 Platzhalter vermischen.
 
@@ -108,6 +117,9 @@ Platzhalter vermischen.
 Mit `failClosed: true` (Default) wirft der Hook bei Start- oder Request-Fehlern.
 OpenCode bricht dann Prompt, Tool-Aufruf oder Model-Request ab, statt Klartext
 weiterzugeben. `failClosed: false` ist nur zum Debuggen gedacht.
+
+Der Pfad-Guard (`blockSensitivePaths`) blockiert unabhängig von `failClosed`
+jeden Tool-Aufruf, der auf eine sensible Datei zielt.
 
 ## Wiederherstellung
 
@@ -119,14 +131,36 @@ Modell.
 
 ## Sicherheit
 
-- Das Mapping enthält Originalwerte. Nie committen, nie an ein Modell senden.
+- Das Mapping lebt standardmäßig nur im Speicher. Persistierte Mappings
+  enthalten Originalwerte: nie committen, nie an ein Modell senden.
+- Der Pfad-Guard blockiert Tool-Zugriffe auf `.rredact/mapping.json`,
+  `.rredact/sessions/`, `.rredact/calibration/`, `.rredact/redacted/` und
+  `.rredact/out/`. Das ist Defense in Depth, keine Sandbox: Ein Shell-Befehl
+  kann einen Pfad verschleiern.
 - Redaktion ist regex- und heuristikbasiert. Sie kann nicht beweisen, dass ein
   Workspace geheimnisfrei ist. Regeln kalibrieren (siehe
   [Skill](../.opencode/skills/rredact/SKILL.md)).
 - Das Plugin begrenzt, was das Modell erreicht. Es verhindert nicht, dass ein
   per Prompt-Injection gesteuertes Modell lokal erlaubte Tools missbraucht.
 - Kalibrierung ist eine separate, ausdrückliche Trust-Boundary und ersetzt
-  keine Runtime-Redaktion.
+  keine Runtime-Redaktion. Da der Pfad-Guard `.rredact/calibration/` blockiert,
+  läuft die Kalibrierung mit deaktiviertem Plugin oder mit
+  `blockSensitivePaths: false`.
+
+## Was wird redigiert?
+
+Alle Tool-Ergebnisse laufen durch `execute.after` und zusätzlich durch den
+`context`-Hook, bevor ein Model-Request rausgeht. Damit werden auch
+Dateiinhalte, Shell-Ausgaben und Anhänge erfasst, die über andere Wege in den
+Kontext gelangen.
+
+Nicht geschützt sind:
+
+- Secrets, die keine Regel erkennen (z. B. ein Passwort ohne Variablennamen
+  oder ein unbekanntes Token-Format),
+- Binär- und Medieninhalte,
+- Tool-Schemas und Provider-Optionen,
+- obfuskierte Shell-Zugriffe auf persistierte Mapping-Dateien.
 
 Details und Beispiele:
 [packages/opencode-rredact/README.md](../packages/opencode-rredact/README.md).

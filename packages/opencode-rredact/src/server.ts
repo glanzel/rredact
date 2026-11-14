@@ -136,6 +136,9 @@ export class RRedactRuntime {
       token,
       ...this.#options.args,
     ]
+    if (!this.#options.storeSessionMappings && !args.includes("--no-store")) {
+      args.push("--no-store")
+    }
 
     const child = spawn(this.#options.binary, args, {
       cwd: this.#cwd,
@@ -159,7 +162,7 @@ export class RRedactRuntime {
 
     const url = await this.#readListeningUrl(child)
     const client = new RRedactClient(url, token, this.#options.requestTimeoutMs)
-    await waitForHealth(client, Math.min(this.#options.startupTimeoutMs, 5_000))
+    await waitForHealth(client, this.#options.startupTimeoutMs)
     return client
   }
 

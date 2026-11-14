@@ -32,6 +32,10 @@ test("defaults are fail-closed and redact every egress point", () => {
     assert.equal(options.redactContext, true)
     assert.equal(options.restoreToolInputs, true)
     assert.deepEqual(options.restoreTools, ["write", "edit", "multiedit", "apply_patch"])
+    assert.equal(options.storeSessionMappings, false)
+    assert.equal(options.blockSensitivePaths, true)
+    assert.ok(options.sensitivePaths.includes(".rredact/mapping.json"))
+    assert.ok(options.sensitivePaths.includes(".rredact/sessions"))
   })
 })
 

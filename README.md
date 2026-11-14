@@ -353,10 +353,10 @@ repos:
 [`packages/opencode-rredact`](packages/opencode-rredact/README.md) is an
 OpenCode V2 plugin that redacts prompts, tool results and assembled model
 requests automatically, before they can reach a model provider. It starts
-`rredact serve` on loopback with a random token, keeps one mapping per OpenCode
-session, restores placeholders for write/edit inputs, and fails closed by
-default. See [docs/opencode-plugin.md](docs/opencode-plugin.md) for the
-architecture and options.
+`rredact serve` on loopback with a random token, keeps one in-memory mapping
+per OpenCode session by default, restores placeholders for write/edit inputs,
+and fails closed by default. See [docs/opencode-plugin.md](docs/opencode-plugin.md)
+for the architecture and options.
 
 ## Security
 
@@ -364,7 +364,8 @@ architecture and options.
   `0600` and ignored by Git.
 - Per-session mappings under `.rredact/sessions/` also contain original values.
   They are written with mode `0600`, ignored by Git, and deleted when a session
-  ends.
+  ends. The OpenCode plugin keeps them in memory by default (`--no-store`);
+  persisted mappings are an explicit opt-in.
 - The API binds to loopback by default. Non-loopback hosts require a token (or
   an explicit `--allow-remote`).
 - `scan` never writes a mapping file.
