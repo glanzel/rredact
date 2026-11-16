@@ -1024,35 +1024,6 @@ rules:
   min_length: 32
   min_entropy: 4.0
   charset: base64
-- id: openredaction-iban
-  description: IBAN bank account
-  category: pii
-  severity: high
-  type: regex
-  pattern: \b([A-Z]{2}\d{2}(?:[ \u{00A0}.-]?[A-Z0-9]){11,30})\b
-  flags: i
-  group: null
-  strip_quotes: false
-  placeholder: IBAN
-  priority: 95
-  enabled: true
-  paths: []
-  exclude_paths: []
-  tags:
-  - openredaction
-  - iban
-  validate: iban
-  context_required: []
-  context_excluded:
-  - (?i)example\s+iban|test\s+iban|sample\s+iban|demo\s+iban|fake\s+iban
-  context_window: 200
-  name_pattern: null
-  name_match: search
-  allow_keys: []
-  bare_values: auto
-  min_length: 32
-  min_entropy: 4.0
-  charset: base64
 - id: openredaction-bank-account-uk
   description: UK bank account number
   category: pii
@@ -4847,8 +4818,7 @@ rules:
   validate: iban
   context_required:
   - (?i)iban|account|bank|uk|gb|financial|payment|transfer
-  context_excluded:
-  - (?i)example\s+iban|test\s+iban|sample\s+iban|demo\s+iban|fake\s+iban
+  context_excluded: []
   context_window: 200
   name_pattern: null
   name_match: search
