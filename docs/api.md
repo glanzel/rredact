@@ -27,6 +27,7 @@ oder `X-RRedact-Token: <token>`.
 | `GET` | `/rules` | Metadaten der geladenen Regeln |
 | `POST` | `/redact` | Text redigieren |
 | `POST` | `/restore` | Platzhalter wiederherstellen |
+| `DELETE` | `/sessions/:session` | Mapping einer Session löschen |
 | `POST` | `/rules/validate` | Regeln prüfen, ohne sie zu speichern |
 | `POST` | `/rules/reload` | `.rredact/rules.d/*.yaml` neu laden |
 
@@ -48,6 +49,7 @@ Body:
 | Feld | Pflicht | Bedeutung |
 | --- | --- | --- |
 | `text` | ja | zu redigierender Text |
+| `session` | nein | Session-ID für ein isoliertes Mapping |
 | `path` | nein | virtueller Pfad für `paths`-Filter der Regeln |
 | `mode` | nein | `placeholder`, `mask`, `hash` |
 | `extra_rules` | nein | Liste zusätzlicher Regel-Objekte (nicht persistiert) |
@@ -108,6 +110,31 @@ curl -s http://127.0.0.1:8787/restore \
 `unresolved` enthält Platzhalter, die nicht im Mapping stehen – z. B. aus einem
 `hash`-Modus oder aus einer anderen Sitzung.
 
+## Sessions
+
+`/redact` und `/restore` akzeptieren ein optionales `session`-Feld:
+
+```json
+{"text": "...", "session": "ses_abc123"}
+```
+
+Jede Session bekommt ein eigenes Mapping unter
+`.rredact/sessions/<sha256-der-session>.json` (Modus `0600`). Ohne `session`
+wird weiterhin das globale `.rredact/mapping.json` verwendet. So können
+mehrere Agents parallel laufen, ohne Platzhalter zu vermischen.
+
+Eine Session wird explizit gelöscht mit:
+
+```bash
+curl -s -X DELETE http://127.0.0.1:8787/sessions/ses_abc123 \
+  -H "Authorization: Bearer $RREDACT_API_TOKEN"
+# {"deleted": true}
+```
+
+Danach lassen sich die zugehörigen Platzhalter nicht mehr wiederherstellen.
+`--no-store` deaktiviert auch die Session-Dateien; die Mappings bleiben dann
+nur im Speicher.
+
 ## `POST /rules/validate`
 
 ```bash
@@ -158,5 +185,7 @@ curl -s -X POST http://127.0.0.1:8787/rules/reload \
   (außer `--no-store`).
 - `--no-store` bedeutet: Wiederherstellen funktioniert nur innerhalb desselben
   Prozesses, nicht nach einem Neustart.
-- Die API ist kein Mehrbenutzer-Dienst. Für mehrere Agents später getrennte
-  Mapping-Dateien/Sessions vorsehen.
+- Session-Mappings liegen unter `.rredact/sessions/`, sind ignoriert und
+  enthalten Originalwerte. Nach dem Ende einer Session löschen.
+- Die API ist kein Mehrbenutzer-Dienst. Für mehrere Agents getrennte
+  Mapping-Dateien/Sessions verwenden.

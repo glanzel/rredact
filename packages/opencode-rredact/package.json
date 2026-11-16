@@ -1,0 +1,30 @@
+{
+  "name": "opencode-rredact",
+  "version": "0.1.0",
+  "description": "Automatic, fail-closed redaction of secrets and PII for OpenCode",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glanzel/rredact.git",
+    "directory": "packages/opencode-rredact"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

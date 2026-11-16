@@ -24,6 +24,29 @@ jobs:
       - name: Test
         run: cargo test
 
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build rredact for integration tests
+        run: cargo build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/opencode-rredact/package-lock.json
+      - name: Install plugin dependencies
+        working-directory: packages/opencode-rredact
+        run: npm ci
+      - name: Typecheck plugin
+        working-directory: packages/opencode-rredact
+        run: npm run typecheck
+      - name: Test plugin
+        working-directory: packages/opencode-rredact
+        run: npm test
+
   scan:
     runs-on: ubuntu-latest
     steps:
